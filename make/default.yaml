@@ -1,0 +1,96 @@
+{{$path := "export PATH=$GOPATH/bin:$PATH"}}
+{{$list := "$(go list ./... | grep -v vendor/ | grep -v '_/go')"}}
+envs:
+  - APP: ron
+  - APP_UNDERSCORE: +echo $APP | tr "-" "_"
+  - ARCH: amd64
+  - CURDIR: +pwd
+  - UNAME: +uname | tr '[:upper:]' '[:lower:]'
+  - LATEST_URL: "https://github.com/upsight/ron/releases/download/v0.0.1/ron-${UNAME}"
+  - PACKAGE_VERSION: +git describe --always --dirty --tags | tr '-' '_'
+  - TAG: v0.0.1
+targets:
+  build:
+    description: Compile a binary to ./bin/${UNAME}_${ARCH}
+    before:
+      - prep
+    cmd: |
+      mkdir -p bin/${UNAME}_${ARCH}
+      GOARCH=$ARCH GOOS=$UNAME go build -o bin/${UNAME}_${ARCH}/$APP-$TAG -ldflags "-X $REPO.GitCommit=$PACKAGE_VERSION -X $REPO.AppVersion=$TAG -X $REPO.AppName=$APP" cmd/$APP/*.go
+  build_all:
+    description: Compile a binary to ./bin/linux_${ARCH} and ./bin/darwin_${ARCH}
+    before:
+      - prep
+    after:
+      - _build_msg
+    cmd: |
+      for os in "linux" "darwin" "windows"; do
+        printf "building to bin/${os}_${ARCH}...\n"
+        mkdir -p bin/${os}_${ARCH}
+        GOARCH=$ARCH GOOS=$os go build -o bin/${os}_${ARCH}/$APP-$TAG -ldflags "-X $REPO/lib.AppVersion=$TAG" cmd/*.go
+      done
+  cover:
+    description: Run go coverage and open a browser to show the heatmap.
+    before:
+      - prep
+    cmd: |
+      rm bin/coverage* || true
+      echo "mode: count" > bin/coverage.out
+      # run tests and create coverage profile
+      for pkg in $(go list ./... | grep -v /vendor/); do
+        go test -covermode=count -coverprofile=bin/coverage.out.tmp $pkg
+        tail -n +2 bin/coverage.out.tmp >> bin/coverage.out || true
+        rm bin/coverage.out.tmp || true
+      done
+
+      # check heatmap
+      go tool cover -html=bin/coverage.out
+  lint:
+    description: Run golint
+    before:
+      - prep
+    cmd: |
+      for pkg in $(go list ./... | grep -v /vendor/); do
+        golint $pkg
+      done
+  test:
+    description: Run go test.
+    before:
+      - prep
+    after:
+      - lint
+      - vet
+    cmd: |
+      go test -cover {{$list}}
+  vet:
+    description: Run go vet on ./src.
+    before:
+      - prep
+    cmd: |
+      go vet {{$list}}
+  docker_clean_old:
+    description: Remove all containers and images that are over a week old.
+    cmd: |
+      docker ps -a | grep 'weeks ago' | awk '{print $1}' | xargs docker rm || true
+      docker ps -a | grep 'months ago' | awk '{print $1}' | xargs docker rm || true
+      docker images | grep 'weeks ago' | awk '{print $3}' | xargs docker rmi || true
+      docker images | grep 'months ago' | awk '{print $3}' | xargs docker rmi || true
+  docker_clean:
+    description: Remove all Docker containers and dangling images.
+    before:
+      - docker_clean_images
+    cmd: |
+      docker rm -f $(docker ps -a -q) || true
+  docker_clean_exited:
+    description: Remove exited containers.
+    cmd: |
+      docker ps -a | grep Exit | cut -d ' ' -f 1 | xargs docker rm
+      docker ps -a | grep Created | cut -d ' ' -f 1 | xargs docker rm
+  docker_clean_images:
+    description: Remove dangling images.
+    cmd: |
+      docker rmi $(docker images -q --filter "dangling=true") || true
+  docker_stats:
+    description: Show the stats of running containers.
+    cmd: |
+      docker stats `docker ps | awk '{print $NF}' | grep -v NAMES`

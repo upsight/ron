@@ -1,0 +1,17 @@
+envs:
+  - UNAME: +uname | tr '[:upper:]' '[:lower:]'
+  - CURDIR: +pwd
+targets:
+  hello:
+    cmd: |
+      echo hello
+  goodbye:
+    cmd: |
+      echo goodbye
+  prep:
+    before:
+      - hello
+    after:
+      - goodbye
+    cmd: |
+      echo prep

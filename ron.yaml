@@ -1,0 +1,104 @@
+{{$path := "export PATH=$GOPATH/bin:$PATH"}}
+{{$list := "$(go list ./... | grep -v vendor/ | grep -v '_/go')"}}
+envs:
+  - APP: ron
+  - PWD: +pwd
+  - REPO: github.com/upsight/$APP
+  - UNAME: +uname | tr '[:upper:]' '[:lower:]'
+  - TAG: v0.0.1
+  - REPO: github.com/upsight/ron
+  - ARCH: amd64
+  - PACKAGE_VERSION: +git describe --always --dirty --tags | tr '-' '_'
+targets:
+  prep:
+    description: Compile the default yaml asset to a go file.
+    cmd: |
+      go install github.com/jteeuwen/go-bindata/...
+      go-bindata -o make/default.go -pkg=make make/default.yaml
+  install:
+    description: Install ron to $GOPATH/bin
+    before:
+      - prep
+      - build
+    cmd: |
+      go install cmd
+  build:
+    description: Compile a binary to ./bin/${UNAME}_${ARCH}
+    before:
+      - prep
+    cmd: |
+      mkdir -p bin/${UNAME}_${ARCH}
+      GOARCH=$ARCH GOOS=$UNAME go build -o bin/${UNAME}_${ARCH}/$APP-$TAG -ldflags "-X $REPO.GitCommit=$PACKAGE_VERSION -X $REPO.AppVersion=$TAG -X $REPO.AppName=$APP" cmd/$APP/*.go
+  build_all:
+    description: Compile a binary to ./bin/linux_${ARCH} and ./bin/darwin_${ARCH}
+    before:
+      - prep
+    after:
+      - _build_msg
+    cmd: |
+      for os in "linux" "darwin" "windows"; do
+        printf "building to bin/${os}_${ARCH}...\n"
+        mkdir -p bin/${os}_${ARCH}
+        GOARCH=$ARCH GOOS=$os go build -o bin/${os}_${ARCH}/$APP-$TAG -ldflags "-X $REPO/lib.AppVersion=$TAG" cmd/*.go
+      done
+  lint:
+    description: Run golint
+    before:
+      - prep
+    cmd: |
+      for pkg in $(go list ./... | grep -v /vendor/); do
+        golint $pkg
+      done
+  vet:
+    description: Run go vet on ./src.
+    before:
+      - prep
+    cmd: |
+      go vet {{$list}}
+  test:
+    description: Run go test.
+    before:
+      - prep
+    after:
+      - lint
+      - vet
+    cmd: |
+      go test -cover {{$list}}
+  testv:
+    description: Run go test -v.
+    before:
+      - prep
+    after:
+      - lint
+      - vet
+    cmd: |
+      go test -v {{$list}}
+  cover:
+    description: Run go coverage and open a browser to show the heatmap.
+    before:
+      - prep
+    cmd: |
+      rm bin/coverage* || true
+      echo "mode: count" > bin/coverage.out
+      # run tests and create coverage profile
+      for pkg in $(go list ./... | grep -v /vendor/); do
+        go test -covermode=count -coverprofile=bin/coverage.out.tmp $pkg
+        tail -n +2 bin/coverage.out.tmp >> bin/coverage.out || true
+        rm bin/coverage.out.tmp || true
+      done
+
+      # check heatmap
+      go tool cover -html=bin/coverage.out
+  run:
+    description: go run the app with no arguments.
+    before:
+      - prep
+    cmd: |
+      go run cmd/main.go
+  _vendor_update:
+    description: >
+      To update vendor packages run this. Assumes glide is installed.
+      brew install glide
+    cmd: |
+      {{$path}}
+      glide update --update-vendored --strip-vcs
