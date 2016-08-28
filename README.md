@@ -23,4 +23,10 @@ http://godoc.org/github.com/upsight/ron
 
 ### Installation
 
-	go get -u github.com/upsight/ron/cmd/ron
+	go get -u github.com/upsight/ron/cmd
+
+or download from [releases](https://github.com/pkar/ron/releases)
+
+### Upgrade
+
+	LATEST_URL=https://github.com/upsight/ron/releases/download/v0.0.1/ron-linux-v0.0.1 ron upgrade 
