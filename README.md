@@ -23,4 +23,4 @@ http://godoc.org/github.com/upsight/ron
 
 ### Installation
 
-	go get -u github.com/upsight/ron/cmd
+	go get -u github.com/upsight/ron/cmd/ron
