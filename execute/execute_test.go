@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"strings"
 	"syscall"
 	"testing"
@@ -115,17 +116,22 @@ func TestExecuteCommandNoWait(t *testing.T) {
 func TestExecuteWaitNoop(t *testing.T) {
 	interrupt := make(chan os.Signal, 1)
 	go func(i chan os.Signal) {
-		WaitNoop(i)
+		WaitNoop(i, &exec.Cmd{})
 	}(interrupt)
 	interrupt <- syscall.SIGHUP
 	time.Sleep(100 * time.Millisecond)
 }
 
 func TestExecuteWaitNoopKill(t *testing.T) {
+	cmd := exec.Command("sleep", "5")
+	err := cmd.Start()
+	if err != nil {
+		t.Fatal(err)
+	}
 	interrupt := make(chan os.Signal, 1)
 	go func(i chan os.Signal) {
-		WaitNoop(i)
+		WaitNoop(i, cmd)
 	}(interrupt)
 	interrupt <- syscall.SIGINT
-	time.Sleep(100 * time.Millisecond)
+	cmd.Wait()
 }

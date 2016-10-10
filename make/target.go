@@ -164,7 +164,7 @@ func (t *Target) Run() (int, string, error) {
 	}
 	interrupt := make(chan os.Signal, 1)
 	go func(c *exec.Cmd) {
-		execute.WaitNoop(interrupt)
+		execute.WaitNoop(interrupt, cmd)
 		if c != nil && c.Process != nil {
 			c.Process.Kill()
 		}
