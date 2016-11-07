@@ -21,13 +21,16 @@ var (
 )
 
 // WaitNoop accepts and waits on any signal and returns on kill signals.
-func WaitNoop(interrupt chan os.Signal) {
+func WaitNoop(interrupt chan os.Signal, cmd *exec.Cmd) {
 	signal.Notify(interrupt)
 	for {
 		select {
 		case sig := <-interrupt:
 			switch sig {
-			case syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGKILL:
+			case syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGKILL:
+				if cmd.Process != nil {
+					cmd.Process.Kill()
+				}
 				return
 			default:
 				continue
