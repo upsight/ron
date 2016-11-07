@@ -10,6 +10,7 @@ import (
 	"github.com/upsight/ron/commands/bash"
 	"github.com/upsight/ron/commands/burgundy"
 	"github.com/upsight/ron/commands/cmd"
+	hs "github.com/upsight/ron/commands/httpstat"
 	rpl "github.com/upsight/ron/commands/replace"
 	trg "github.com/upsight/ron/commands/target"
 	tmpl "github.com/upsight/ron/commands/template"
@@ -41,6 +42,7 @@ func NewCommander(stdOut io.Writer, stdErr io.Writer) Commander {
 		&bash.Command{W: stdOut, WErr: stdErr},
 		&burgundy.Command{W: stdOut, WErr: stdErr},
 		&cmd.Command{W: stdOut, WErr: stdErr, AppName: AppName, Name: "cmd"},
+		&hs.Command{W: stdOut, WErr: stdErr, AppName: AppName, Name: "httpstat"},
 		&rpl.Command{W: stdOut, WErr: stdErr, AppName: AppName, Name: "replace"},
 		&trg.Command{W: stdOut, WErr: stdErr, AppName: AppName, Name: "target"},
 		&tmpl.Command{W: stdOut, WErr: stdErr, AppName: AppName, Name: "template"},
