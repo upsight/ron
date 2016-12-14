@@ -10,9 +10,9 @@ import (
 	"github.com/upsight/ron/commands/bash"
 	"github.com/upsight/ron/commands/burgundy"
 	"github.com/upsight/ron/commands/cmd"
-	hs "github.com/upsight/ron/commands/httpstat"
-	rpl "github.com/upsight/ron/commands/replace"
-	trg "github.com/upsight/ron/commands/target"
+	"github.com/upsight/ron/commands/httpstat"
+	"github.com/upsight/ron/commands/replace"
+	"github.com/upsight/ron/commands/target"
 	tmpl "github.com/upsight/ron/commands/template"
 	upg "github.com/upsight/ron/commands/upgrade"
 	vrs "github.com/upsight/ron/commands/version"
@@ -20,35 +20,10 @@ import (
 
 // Command defines the methods a command should implement.
 type Command interface {
-	Run([]string) (int, error)
-	Names() map[string]struct{}
 	Description() string
-}
-
-// Commander is a mapping of name to command.
-type Commander []Command
-
-// NewCommander creates a new map of command objects, where the keys are the
-// names of the commands.
-func NewCommander(stdOut io.Writer, stdErr io.Writer) Commander {
-	if stdOut == nil {
-		stdOut = os.Stdout
-	}
-	if stdErr == nil {
-		stdErr = os.Stderr
-	}
-
-	return Commander{
-		&bash.Command{W: stdOut, WErr: stdErr},
-		&burgundy.Command{W: stdOut, WErr: stdErr},
-		&cmd.Command{W: stdOut, WErr: stdErr, AppName: AppName, Name: "cmd"},
-		&hs.Command{W: stdOut, WErr: stdErr, AppName: AppName, Name: "httpstat"},
-		&rpl.Command{W: stdOut, WErr: stdErr, AppName: AppName, Name: "replace"},
-		&trg.Command{W: stdOut, WErr: stdErr, AppName: AppName, Name: "target"},
-		&tmpl.Command{W: stdOut, WErr: stdErr, AppName: AppName, Name: "template"},
-		&upg.Command{W: stdOut, WErr: stdErr, AppName: AppName},
-		&vrs.Command{W: stdOut, WErr: stdErr, AppName: AppName, AppVersion: AppVersion, GitCommit: GitCommit},
-	}
+	Key() string
+	Aliases() map[string]struct{}
+	Run([]string) (int, error)
 }
 
 type nameDescription struct {
@@ -56,14 +31,68 @@ type nameDescription struct {
 	description string
 }
 
+// Commander is a mapping of name to command.
+type Commander struct {
+	Stderr   io.Writer
+	Stdout   io.Writer
+	Commands []Command
+}
+
+// NewDefaultCommander creates a new map of command objects, where the keys are the
+// names of the commands.
+func NewDefaultCommander(stdOut io.Writer, stdErr io.Writer) *Commander {
+	if stdOut == nil {
+		stdOut = os.Stdout
+	}
+	if stdErr == nil {
+		stdErr = os.Stderr
+	}
+
+	c := &Commander{
+		Stderr: stdErr,
+		Stdout: stdOut,
+		Commands: []Command{
+			&bash.Command{Name: "bash", W: stdOut, WErr: stdErr},
+			&burgundy.Command{Name: "burgundy", W: stdOut, WErr: stdErr},
+			&cmd.Command{Name: "cmd", W: stdOut, WErr: stdErr, AppName: AppName},
+			&httpstat.Command{Name: "httpstat", W: stdOut, WErr: stdErr, AppName: AppName},
+			&replace.Command{Name: "replace", W: stdOut, WErr: stdErr, AppName: AppName},
+			&target.Command{Name: "target", W: stdOut, WErr: stdErr, AppName: AppName},
+			&tmpl.Command{Name: "template", W: stdOut, WErr: stdErr, AppName: AppName},
+			&upg.Command{Name: "upgrade", W: stdOut, WErr: stdErr, AppName: AppName},
+			&vrs.Command{Name: "version", W: stdOut, WErr: stdErr, AppName: AppName, AppVersion: AppVersion, GitCommit: GitCommit},
+		},
+	}
+	sort.Sort(c)
+	return c
+}
+
+func (c Commander) Len() int {
+	return len(c.Commands)
+}
+
+func (c Commander) Less(i, j int) bool {
+	return c.Commands[i].Key() < c.Commands[j].Key()
+}
+
+func (c Commander) Swap(i, j int) {
+	c.Commands[i], c.Commands[j] = c.Commands[j], c.Commands[i]
+}
+
+// Add will insert a new Command and then sort it by the commands Name field.
+func (c *Commander) Add(cmd Command) {
+	c.Commands = append(c.Commands, cmd)
+	sort.Sort(c)
+}
+
 // Usage displays the available commands.
-func (c Commander) Usage(writer io.Writer) {
+func (c *Commander) Usage(writer io.Writer) {
 	fmt.Fprintf(writer, "Usage: %s <command>\n\nAvailable commands are:\n", AppName)
 	maxLength := 0
 	metas := []*nameDescription{}
-	for _, cmd := range c {
+	for _, cmd := range c.Commands {
 		names := []string{}
-		for k := range cmd.Names() {
+		for k := range cmd.Aliases() {
 			names = append(names, k)
 		}
 		sort.Strings(names)
