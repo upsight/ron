@@ -9,7 +9,8 @@ import (
 )
 
 func main() {
-	status, err := ron.Run(os.Stdout, os.Stderr, os.Args[1:])
+	c := ron.NewDefaultCommander(os.Stdout, os.Stderr)
+	status, err := ron.Run(c, os.Args[1:])
 	if err != nil {
 		hostname, _ := os.Hostname()
 		log.Println(hostname, color.Red(err.Error()))
