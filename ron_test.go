@@ -17,7 +17,8 @@ func init() {
 func TestRonRun(t *testing.T) {
 	stdOut := &bytes.Buffer{}
 	stdErr := &bytes.Buffer{}
-	status, err := Run(stdOut, stdErr, []string{"version"})
+	c := NewDefaultCommander(stdOut, stdErr)
+	status, err := Run(c, []string{"version"})
 	if status != 0 {
 		t.Fatalf("expected status 0 got %d", status)
 	}
@@ -29,14 +30,16 @@ func TestRonRun(t *testing.T) {
 func TestRonRunNArgs(t *testing.T) {
 	stdOut := &bytes.Buffer{}
 	stdErr := &bytes.Buffer{}
-	status, _ := Run(stdOut, stdErr, []string{})
+	c := NewDefaultCommander(stdOut, stdErr)
+	status, _ := Run(c, []string{})
 	if status != 1 {
 		t.Fatalf("expected status 1 got %d", status)
 	}
 }
 
 func TestRonRunOutputStdout(t *testing.T) {
-	status, err := Run(nil, nil, []string{"version"})
+	c := NewDefaultCommander(nil, nil)
+	status, err := Run(c, []string{"version"})
 	if status != 0 {
 		t.Fatalf("expected status 0 got %d", status)
 	}
@@ -46,7 +49,8 @@ func TestRonRunOutputStdout(t *testing.T) {
 }
 
 func TestRonRunNoCommand(t *testing.T) {
-	status, _ := Run(nil, nil, []string{"nothere"})
+	c := NewDefaultCommander(nil, nil)
+	status, _ := Run(c, []string{"nothere"})
 	if status != 1 {
 		t.Fatalf("expected status 1 got %d", status)
 	}

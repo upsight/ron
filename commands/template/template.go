@@ -64,9 +64,14 @@ func (c *Command) Run(args []string) (int, error) {
 	return 0, nil
 }
 
-// Names are the aliases and name for the command. For instance
+// Key returns the commands name for sorting.
+func (c *Command) Key() string {
+	return c.Name
+}
+
+// Aliases are the aliases and name for the command. For instance
 // a command can have a long form and short form.
-func (c *Command) Names() map[string]struct{} {
+func (c *Command) Aliases() map[string]struct{} {
 	return map[string]struct{}{
 		"template": struct{}{},
 	}
