@@ -9,6 +9,7 @@ envs:
   - PACKAGE_VERSION: +git describe --always --dirty --tags | tr '-' '_'
   - TAG: v1.0.1
   - LATEST_URL: "https://github.com/upsight/ron/releases/download/$TAG/ron-${UNAME}-latest"
+  - REPO: github.com/upsight/ron
 targets:
   prep:
     description: Compile the default yaml asset to a go file.
@@ -39,7 +40,7 @@ targets:
       for os in "linux" "darwin" "windows"; do
         printf "building to bin/${os}_${ARCH}...\n"
         mkdir -p bin/${os}_${ARCH}
-        GOARCH=$ARCH GOOS=$os go build -o bin/${os}_${ARCH}/$APP-${os}-$TAG -ldflags "-X $REPO.GitCommit=$PACKAGE_VERSION -X $REPO.AppVersion=$TAG -X $REPO.AppName=$APP" cmd/*.go
+        GOARCH=$ARCH GOOS=$os ron t build
       done
   lint:
     description: Run golint

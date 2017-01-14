@@ -1,0 +1,7 @@
+package: github.com/upsight/ron
+import:
+- package: github.com/pkar/runit
+- package: golang.org/x/net
+  subpackages:
+  - http2
+- package: gopkg.in/yaml.v2

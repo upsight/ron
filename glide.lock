@@ -1,0 +1,21 @@
+hash: dfdbbf5b54244b0c64bf02b63483f2432473fd694d27ea98f0a4af3ff70a270d
+updated: 2017-01-14T08:39:17.393364647-08:00
+imports:
+- name: github.com/go-fsnotify/fsnotify
+  version: 629574ca2a5df945712d3079857300b5e4da0236
+- name: github.com/pkar/runit
+  version: adbec017cffe40f491216e950a656addac4e7661
+- name: golang.org/x/net
+  version: f2499483f923065a842d38eb4c7f1927e6fc6e6d
+  subpackages:
+  - http2
+  - http2/hpack
+  - idna
+  - lex/httplex
+- name: golang.org/x/sys
+  version: d75a52659825e75fff6158388dddc6a5b04f9ba5
+  subpackages:
+  - unix
+- name: gopkg.in/yaml.v2
+  version: a5b47d31c556af34a302ce5d659e6fea44d90de0
+testImports: []
