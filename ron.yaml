@@ -10,6 +10,7 @@ envs:
   - TAG: v1.0.1
   - LATEST_URL: "https://github.com/upsight/ron/releases/download/$TAG/ron-${UNAME}-latest"
   - REPO: github.com/upsight/ron
+  - RELEASES: linux darwin windows
 targets:
   prep:
     description: Compile the default yaml asset to a go file.
@@ -37,10 +38,10 @@ targets:
     after:
       - _build_msg
     cmd: |
-      for os in "linux" "darwin" "windows"; do
+      for os in $RELEASES; do
         printf "building to bin/${os}_${ARCH}...\n"
         mkdir -p bin/${os}_${ARCH}
-        GOARCH=$ARCH GOOS=$os ron t build
+        UNAME=$os ron t build
       done
   lint:
     description: Run golint
