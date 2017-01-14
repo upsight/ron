@@ -30,7 +30,7 @@ targets:
       - prep
     cmd: |
       mkdir -p bin/${UNAME}_${ARCH}
-      GOARCH=$ARCH GOOS=$UNAME go build -o bin/${UNAME}_${ARCH}/$APP-$TAG -ldflags "-X $REPO.GitCommit=$PACKAGE_VERSION -X $REPO.AppVersion=$TAG -X $REPO.AppName=$APP" cmd/$APP/*.go
+      GOARCH=$ARCH GOOS=$UNAME go build -o bin/${UNAME}_${ARCH}/$APP-${UNAME}-$TAG -ldflags "-X $REPO.GitCommit=$PACKAGE_VERSION -X $REPO.AppVersion=$TAG -X $REPO.AppName=$APP" cmd/$APP/*.go
   build_all:
     description: Compile a binary to ./bin/linux_${ARCH} and ./bin/darwin_${ARCH}
     before:
