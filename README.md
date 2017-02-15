@@ -1,6 +1,6 @@
 ![ron](ron.jpg)
 
-# Ron
+# Ron [![GoDoc](https://godoc.org/github.com/upsight/ron?status.svg)](http://godoc.org/github.com/upsight/ron) [![Build Status](https://travis-ci.org/upsight/ron.svg?branch=master)](https://travis-ci.org/upsight/ron)
 
 Package ron provides a command line interface to common build tasks.
 ron is a process runner/container builder/yaml unicorn maker/zombie process reaper.
