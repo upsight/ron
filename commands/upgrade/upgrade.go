@@ -94,7 +94,7 @@ func (c *Command) Run(args []string) (int, error) {
 		return 1, err
 	}
 	// Create envs
-	envs, err := mke.NewEnv(mke.DefaultEnvConfig, "", mke.ParseOSEnvs(os.Environ()), c.W)
+	envs, err := mke.NewEnv([]*mke.Config{&mke.Config{Envs: mke.DefaultEnvConfig}}, mke.ParseOSEnvs(os.Environ()), c.W)
 	if err != nil {
 		return 1, err
 	}

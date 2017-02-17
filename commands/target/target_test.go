@@ -11,11 +11,11 @@ import (
 )
 
 var (
-	mockLoadConfig = func(path string) (string, string, error) {
-		return "", "", nil
+	mockLoadConfig = func(path string) (*mke.Config, error) {
+		return nil, nil
 	}
-	mockLoadConfigErr = func(path string) (string, string, error) {
-		return "", "", fmt.Errorf("bad config")
+	mockLoadConfigErr = func(path string) (*mke.Config, error) {
+		return nil, fmt.Errorf("bad config")
 	}
 )
 
@@ -23,7 +23,7 @@ func TestRonRunTarget(t *testing.T) {
 	stdOut := &bytes.Buffer{}
 	stdErr := &bytes.Buffer{}
 	c := &Command{W: stdOut, WErr: stdErr}
-	status, err := c.Run([]string{"--default=" + path.Join("testdata", "target_test.yaml"), "prep"})
+	status, err := c.Run([]string{"--yaml=" + path.Join("testdata", "target_test.yaml"), "prep"})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -76,7 +76,10 @@ func createTestTargetConfig(stdOut *bytes.Buffer, stdErr *bytes.Buffer) (*Target
 		stdErr = &bytes.Buffer{}
 	}
 
-	tgConf, _ := NewTargetConfig(testTargetEnv, DefaultTargetConfig, testNewTargets, stdOut, stdErr)
+	tgConf, _ := NewTargetConfig(testTargetEnv, []*Config{
+		&Config{Targets: DefaultTargetConfig},
+		&Config{Targets: testNewTargets},
+	}, stdOut, stdErr)
 	return tgConf, stdOut, stdErr
 }
 
@@ -88,13 +91,19 @@ func createTestTarget(name string, stdOut *bytes.Buffer, stdErr *bytes.Buffer) (
 		stdErr = &bytes.Buffer{}
 	}
 
-	tgConf, _ := NewTargetConfig(testTargetEnv, DefaultTargetConfig, testNewTargets, stdOut, stdErr)
+	tgConf, _ := NewTargetConfig(testTargetEnv, []*Config{
+		&Config{Targets: DefaultTargetConfig},
+		&Config{Targets: testNewTargets},
+	}, stdOut, stdErr)
 	target, _ := tgConf.Target(name)
 	return target, stdOut, stdErr
 }
 
 func TestMakeNewTargetConfig(t *testing.T) {
-	_, err := NewTargetConfig(testTargetEnv, DefaultTargetConfig, testNewTargets, nil, nil)
+	_, err := NewTargetConfig(testTargetEnv, []*Config{
+		&Config{Targets: DefaultTargetConfig},
+		&Config{Targets: testNewTargets},
+	}, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,14 +111,20 @@ func TestMakeNewTargetConfig(t *testing.T) {
 
 func TestMakeNewTargetConfigBadDefault(t *testing.T) {
 	stdOut := &bytes.Buffer{}
-	_, err := NewTargetConfig(testTargetEnv, `:"`, testNewTargets, stdOut, nil)
+	_, err := NewTargetConfig(testTargetEnv, []*Config{
+		&Config{Targets: `:"`},
+		&Config{Targets: testNewTargets},
+	}, stdOut, nil)
 	if err == nil {
 		t.Fatal("expected err for invalid default config")
 	}
 }
 
 func TestMakeNewTargetConfigBadNew(t *testing.T) {
-	_, err := NewTargetConfig(testTargetEnv, DefaultTargetConfig, `:"`, nil, nil)
+	_, err := NewTargetConfig(testTargetEnv, []*Config{
+		&Config{Targets: DefaultTargetConfig},
+		&Config{Targets: `:"`},
+	}, nil, nil)
 	if err == nil {
 		t.Fatal("expected err for invalid new config")
 	}
@@ -117,7 +132,10 @@ func TestMakeNewTargetConfigBadNew(t *testing.T) {
 
 func TestMakeNewTargetConfigList(t *testing.T) {
 	stdOut := &bytes.Buffer{}
-	tc, err := NewTargetConfig(testTargetEnv, DefaultTargetConfig, testNewTargets, stdOut, nil)
+	tc, err := NewTargetConfig(testTargetEnv, []*Config{
+		&Config{Targets: DefaultTargetConfig},
+		&Config{Targets: testNewTargets},
+	}, stdOut, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -132,7 +150,10 @@ func TestMakeNewTargetConfigList(t *testing.T) {
 
 func TestMakeNewTargetConfigListVerbose(t *testing.T) {
 	stdOut := &bytes.Buffer{}
-	tc, err := NewTargetConfig(testTargetEnv, DefaultTargetConfig, testNewTargets, stdOut, nil)
+	tc, err := NewTargetConfig(testTargetEnv, []*Config{
+		&Config{Targets: DefaultTargetConfig},
+		&Config{Targets: testNewTargets},
+	}, stdOut, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -144,7 +165,10 @@ func TestMakeNewTargetConfigListVerbose(t *testing.T) {
 
 func TestMakeNewTargetConfigListVerboseFuzzyGlobbing(t *testing.T) {
 	stdOut := &bytes.Buffer{}
-	tc, err := NewTargetConfig(testTargetEnv, DefaultTargetConfig, testNewTargets, stdOut, nil)
+	tc, err := NewTargetConfig(testTargetEnv, []*Config{
+		&Config{Targets: DefaultTargetConfig},
+		&Config{Targets: testNewTargets},
+	}, stdOut, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

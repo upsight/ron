@@ -23,12 +23,11 @@ const (
 // Env takes a raw yaml environment definition and expands and
 // overrides any variables.
 type Env struct {
-	Config         MSS       // the key value of expanded variables
-	W              io.Writer // underlying writer
-	OSEnvs         MSS       // the initial environment variables
-	rawDefaultEnvs string    // the raw default env configuration yaml
-	rawNewEnvs     string    // the raw overriden env configuration yaml
-	keyOrder       []string  // the env keys order of preference
+	Config   MSS       // the key value of expanded variables
+	W        io.Writer // underlying writer
+	OSEnvs   MSS       // the initial environment variables
+	configs  []*Config
+	keyOrder []string // the env keys order of preference
 }
 
 // ParseOSEnvs takes a list of "key=val" and splits them
@@ -44,18 +43,17 @@ func ParseOSEnvs(osEnvs []string) MSS {
 
 // NewEnv create a new environment variable parser similar
 // to make variables.
-func NewEnv(rawDefaultEnvs, rawNewEnvs string, osEnvs MSS, writer io.Writer) (*Env, error) {
+func NewEnv(configs []*Config, osEnvs MSS, writer io.Writer) (*Env, error) {
 	if writer == nil {
 		writer = os.Stdout
 	}
 
 	e := &Env{
-		W:              writer,
-		Config:         MSS{},
-		OSEnvs:         osEnvs,
-		rawDefaultEnvs: rawDefaultEnvs,
-		rawNewEnvs:     rawNewEnvs,
-		keyOrder:       []string{},
+		W:        writer,
+		Config:   MSS{},
+		OSEnvs:   osEnvs,
+		configs:  configs,
+		keyOrder: []string{},
 	}
 	err := e.process()
 	if err != nil {
@@ -79,40 +77,20 @@ func in(key string, keys []string) bool {
 // environment variables and yaml config.
 // The overriding value used is from os.Environ.
 func (e *Env) process() error {
-	// Load default configs
-	var defaultEnvs []MSS
-	err := yaml.Unmarshal([]byte(e.rawDefaultEnvs), &defaultEnvs)
-	if err != nil {
-		return err
-	}
-	// Load any overriden configs
-	var rawNewEnvs []MSS
-	err = yaml.Unmarshal([]byte(e.rawNewEnvs), &rawNewEnvs)
-	if err != nil {
-		return err
-	}
-
-	// load default envs
-	for _, env := range defaultEnvs {
-		for k := range env {
-			e.Config[k] = env[k]
-			if !in(k, e.keyOrder) {
-				e.keyOrder = append(e.keyOrder, k)
+	for _, config := range e.configs {
+		var envs []MSS
+		if err := yaml.Unmarshal([]byte(config.Envs), &envs); err != nil {
+			return err
+		}
+		for _, env := range envs {
+			for k, v := range env {
+				e.Config[k] = v
+				if !in(k, e.keyOrder) {
+					e.keyOrder = append(e.keyOrder, k)
+				}
 			}
 		}
 	}
-	// load any new envs
-	for _, env := range rawNewEnvs {
-		for k := range env {
-			e.Config[k] = env[k]
-			// Append new envs to the key order list
-			// so that this order takes precedence.
-			if !in(k, e.keyOrder) {
-				e.keyOrder = append(e.keyOrder, k)
-			}
-		}
-	}
-	// Load any os enviroment as final value
 	for k, v := range e.OSEnvs {
 		e.Config[k] = v
 	}
@@ -190,13 +168,11 @@ func (e *Env) List() error {
 // PrintRaw outputs the unprocessed yaml given to Env in both
 // the defaults and overriden.
 func (e *Env) PrintRaw() error {
-	_, err := e.W.Write([]byte(e.rawDefaultEnvs + "\n"))
-	if err != nil {
-		return err
-	}
-	_, err = e.W.Write([]byte(e.rawNewEnvs + "\n"))
-	if err != nil {
-		return err
+	for _, config := range e.configs {
+		_, err := e.W.Write([]byte(config.Envs + "\n"))
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

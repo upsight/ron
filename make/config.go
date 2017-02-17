@@ -2,6 +2,8 @@ package make
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -11,6 +13,13 @@ import (
 	fi "github.com/upsight/ron/file"
 	template "github.com/upsight/ron/template"
 )
+
+// Config contains the raw strings from a loaded config file.
+type Config struct {
+	IsDefault bool
+	Envs      string
+	Targets   string
+}
 
 // extractConfigError parses the error for line number and then
 // generates the text surrounding it.
@@ -37,35 +46,102 @@ func extractConfigError(path, input string, inErr error) error {
 	return err
 }
 
+func findConfigFile() (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	for {
+		fp := filepath.Join(dir, "ron.yaml")
+		if _, err := os.Stat(fp); err == nil {
+			return fp, nil
+		} else if !os.IsNotExist(err) {
+			return "", err
+		}
+		parentDir := filepath.Dir(dir)
+		if parentDir == dir {
+			return "", nil
+		}
+		dir = parentDir
+	}
+}
+
+// LoadConfigFiles loads the default and override config files and returns
+// them as a slice. If defaultYamlPath is an empty string, the defaults
+// compiled into ron will be used instead. If overrideYamlPath is blank,
+// it will find the nearest parent folder containing a ron.yaml file and use
+// that file instead. In that case, the path to that file will be returned
+// so that the caller can change the working directory to that folder before
+// running further commands.
+func LoadConfigFiles(defaultYamlPath, overrideYamlPath string) ([]*Config, string, error) {
+	configs := []*Config{}
+
+	var err error
+	defaultConfig := &Config{
+		Envs:    DefaultEnvConfig,
+		Targets: DefaultTargetConfig,
+	}
+	if defaultYamlPath != "" {
+		defaultConfig, err = LoadConfigFile(defaultYamlPath)
+		if err != nil {
+			return nil, "", err
+		}
+	}
+	defaultConfig.IsDefault = true
+	defaultConfig.Envs = strings.TrimSpace(defaultConfig.Envs)
+	defaultConfig.Targets = strings.TrimSpace(defaultConfig.Targets)
+	configs = append(configs, defaultConfig)
+
+	foundConfigDir := ""
+	if overrideYamlPath == "" {
+		overrideYamlPath, err = findConfigFile()
+		if err != nil {
+			return nil, "", err
+		}
+		foundConfigDir = filepath.Dir(overrideYamlPath)
+	}
+	if overrideYamlPath != "" {
+		overrideConfig, err := LoadConfigFile(overrideYamlPath)
+		if err != nil {
+			return nil, "", err
+		}
+		overrideConfig.Envs = strings.TrimSpace(overrideConfig.Envs)
+		overrideConfig.Targets = strings.TrimSpace(overrideConfig.Targets)
+		configs = append(configs, overrideConfig)
+	}
+
+	return configs, foundConfigDir, nil
+}
+
 // LoadConfigFile will open a given file path and return it's raw
 // envs and targets.
-var LoadConfigFile = func(path string) (string, string, error) {
+var LoadConfigFile = func(path string) (*Config, error) {
 	f, err := fi.NewFile(path)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 	content, err := template.RenderGo(path, f.String())
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
 	var c *EnvTargetConfig
 	err = yaml.Unmarshal([]byte(content), &c)
 	if err != nil {
-		return "", "", extractConfigError(path, content, err)
+		return nil, extractConfigError(path, content, err)
 	}
 	if c == nil {
-		return "", "", fmt.Errorf("empty file requires envs and target keys")
+		return nil, fmt.Errorf("empty file requires envs and target keys")
 	}
 	envs, err := yaml.Marshal(c.Envs)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 	targets, err := yaml.Marshal(c.Targets)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
-	return string(envs), string(targets), nil
+	return &Config{Envs: string(envs), Targets: string(targets)}, nil
 }
 
 // LoadDefault loads the binary yaml file envs and targets.

@@ -34,17 +34,16 @@ type Target struct {
 // TargetConfig is a mapping of target names to target
 // commands.
 type TargetConfig struct {
-	Targets           map[string]*Target
-	Env               *Env   // the environment variables used for commands.
-	rawDefaultTargets string // the raw default target configuration yaml
-	rawNewTargets     string // the raw overridden target configuration yaml
-	StdOut            io.Writer
-	StdErr            io.Writer
+	Targets map[string]*Target
+	Env     *Env // the environment variables used for commands.
+	StdOut  io.Writer
+	StdErr  io.Writer
+	configs []*Config
 }
 
 // NewTargetConfig takes a default set of yaml in config format and then
 // overrides them with a new set of config target replacements.
-func NewTargetConfig(env *Env, rawDefaultTargets, rawNewTargets string, stdOut io.Writer, stdErr io.Writer) (*TargetConfig, error) {
+func NewTargetConfig(env *Env, configs []*Config, stdOut io.Writer, stdErr io.Writer) (*TargetConfig, error) {
 	if stdOut == nil {
 		stdOut = os.Stdout
 	}
@@ -53,30 +52,22 @@ func NewTargetConfig(env *Env, rawDefaultTargets, rawNewTargets string, stdOut i
 	}
 
 	t := &TargetConfig{
-		Env:               env,
-		Targets:           map[string]*Target{},
-		StdOut:            stdOut,
-		StdErr:            stdErr,
-		rawDefaultTargets: rawDefaultTargets,
-		rawNewTargets:     rawNewTargets,
+		Env:     env,
+		Targets: map[string]*Target{},
+		StdOut:  stdOut,
+		StdErr:  stdErr,
+		configs: configs,
 	}
 
-	// Load default targets
-	err := yaml.Unmarshal([]byte(rawDefaultTargets), &t.Targets)
-	if err != nil {
-		return nil, err
-	}
-	for _, target := range t.Targets {
-		target.IsDefault = true
-	}
-	var newTargets map[string]*Target
-	// Load any overridden targets
-	err = yaml.Unmarshal([]byte(t.rawNewTargets), &newTargets)
-	if err != nil {
-		return nil, err
-	}
-	for name, target := range newTargets {
-		t.Targets[name] = target
+	for _, config := range t.configs {
+		var targets map[string]*Target
+		if err := yaml.Unmarshal([]byte(config.Targets), &targets); err != nil {
+			return nil, err
+		}
+		for name, target := range targets {
+			t.Targets[name] = target
+			t.Targets[name].IsDefault = config.IsDefault
+		}
 	}
 	// initialize io for each target.
 	for name, target := range t.Targets {

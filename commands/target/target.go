@@ -88,39 +88,17 @@ func (c *Command) Run(args []string) (int, error) {
 		return 1, nil
 	}
 
-	// Load default config values for envs and targets
-	var err error
-	defaultEnvs := mke.DefaultEnvConfig
-	defaultTargets := mke.DefaultTargetConfig
-	if defaultYamlPath != "" {
-		defaultEnvs, defaultTargets, err = mke.LoadConfigFile(defaultYamlPath)
-		if err != nil {
-			return 1, err
-		}
+	configs, foundConfigDir, err := mke.LoadConfigFiles(defaultYamlPath, overrideYamlPath)
+	if err != nil {
+		return 1, err
 	}
-	defaultEnvs = strings.TrimSpace(defaultEnvs)
-	defaultTargets = strings.TrimSpace(defaultTargets)
-	// Load override config values for envs and targets
-	overrideEnvs := ""
-	overrideTargets := ""
-	if overrideYamlPath != "" {
-		overrideEnvs, overrideTargets, err = mke.LoadConfigFile(overrideYamlPath)
-		if err != nil {
-			return 1, err
-		}
-	} else {
-		// check if there is a default ron.yaml file to use.
-		if _, err := os.Stat("ron.yaml"); err == nil {
-			overrideEnvs, overrideTargets, err = mke.LoadConfigFile("ron.yaml")
-			if err != nil {
-				return 1, err
-			}
-		}
+	if foundConfigDir != "" {
+		// If we discovered a config in a parent folder, change the working
+		// directory to that folder so Ron targets run from the expected place.
+		os.Chdir(foundConfigDir)
 	}
-	overrideEnvs = strings.TrimSpace(overrideEnvs)
-	overrideTargets = strings.TrimSpace(overrideTargets)
 	// Create env
-	envs, err := mke.NewEnv(defaultEnvs, overrideEnvs, mke.ParseOSEnvs(os.Environ()), c.W)
+	envs, err := mke.NewEnv(configs, mke.ParseOSEnvs(os.Environ()), c.W)
 	if err != nil {
 		return 1, err
 	}
@@ -132,7 +110,7 @@ func (c *Command) Run(args []string) (int, error) {
 		return 0, nil
 	}
 	// Create targets
-	targetConfig, err := mke.NewTargetConfig(envs, defaultTargets, overrideTargets, c.W, c.WErr)
+	targetConfig, err := mke.NewTargetConfig(envs, configs, c.W, c.WErr)
 	if err != nil {
 		return 1, err
 	}
