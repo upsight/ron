@@ -60,7 +60,7 @@ func TestRonRunTargetListEnvs(t *testing.T) {
 	}
 }
 
-func TestRonRunTargetConfigList(t *testing.T) {
+func TestRonRunTargetConfigsList(t *testing.T) {
 	stdOut := &bytes.Buffer{}
 	stdErr := &bytes.Buffer{}
 	c := &Command{W: stdOut, WErr: stdErr}

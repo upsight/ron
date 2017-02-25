@@ -13,10 +13,7 @@ import (
 
 func mustLoadConfigFile(t *testing.T, path string, isDefault bool) *Config {
 	c, err := LoadConfigFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	c.IsDefault = isDefault
+	ok(t, err)
 	return c
 }
 
@@ -27,27 +24,23 @@ func TestMakeFindConfigFile(t *testing.T) {
 	}
 	expected := filepath.Join(filepath.Dir(wd), "ron.yaml")
 	found, err := findConfigFile()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if found != expected {
-		t.Errorf("expected %q, got %q", expected, found)
-	}
+	ok(t, err)
+	equals(t, expected, found)
 }
 
 func TestMakeLoadConfigFiles(t *testing.T) {
 	d, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
+	ok(t, err)
 	d = filepath.Dir(d)
 	tests := []struct {
+		name             string
 		defaultYamlPath  string
 		overrideYamlPath string
 		expectedConfigs  []*Config
 		expectedFound    string
 	}{
 		{
+			name:          "",
 			expectedFound: d,
 			expectedConfigs: []*Config{
 				mustLoadConfigFile(t, "default.yaml", true),
@@ -55,6 +48,7 @@ func TestMakeLoadConfigFiles(t *testing.T) {
 			},
 		},
 		{
+			name:             "",
 			overrideYamlPath: "testdata/target_test.yaml",
 			expectedFound:    "",
 			expectedConfigs: []*Config{
@@ -63,30 +57,28 @@ func TestMakeLoadConfigFiles(t *testing.T) {
 			},
 		},
 	}
-	for _, test := range tests {
-		t.Logf("testing: %+v", test)
-		configs, found, err := LoadConfigFiles(test.defaultYamlPath, test.overrideYamlPath)
-		if err != nil {
-			t.Error(err)
-		}
-		matched := true
-		if len(configs) != len(test.expectedConfigs) {
-			matched = false
-		}
-		if !matched {
-			t.Fail()
-			t.Log("expected:\n")
-			for _, c := range test.expectedConfigs {
-				t.Logf("- %+v\n", *c)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Logf("testing: %+v", tt)
+			configs, found, err := LoadConfigFiles(tt.defaultYamlPath, tt.overrideYamlPath)
+			ok(t, err)
+			matched := true
+			if len(configs) != len(tt.expectedConfigs) {
+				matched = false
 			}
-			t.Log("got:\n")
-			for _, c := range configs {
-				t.Logf("- %+v\n", *c)
+			if !matched {
+				t.Fail()
+				t.Log("expected:\n")
+				for _, c := range tt.expectedConfigs {
+					t.Logf("- %+v\n", *c)
+				}
+				t.Log("got:\n")
+				for _, c := range configs {
+					t.Logf("- %+v\n", *c)
+				}
 			}
-		}
-		if found != test.expectedFound {
-			t.Errorf("expected %q, got %q\n", test.expectedFound, found)
-		}
+			equals(t, tt.expectedFound, found)
+		})
 	}
 }
 
@@ -105,9 +97,7 @@ func TestMakeLoadDefaultAssetMissing(t *testing.T) {
 
 func TestMakeLoadConfigFile(t *testing.T) {
 	_, err := LoadConfigFile(path.Join(wrkdir, "testdata", "target_test.yaml"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	ok(t, err)
 }
 
 func TestMakeLoadConfigFilePathErr(t *testing.T) {
@@ -157,15 +147,12 @@ f:`
 targets:
 a:
 b:
-c:
-`)
-	var c *EnvTargetConfig
+c: `)
+	var c *EnvTargetConfigs
 	err := yaml.Unmarshal([]byte(config), &c)
 	if err == nil {
 		t.Error("yaml should be invalid")
 	}
 	got := extractConfigError("file.yaml", config, err)
-	if got.Error() != want.Error() {
-		t.Errorf("got:\n\"%s\"\nwant:\n\"%s\"", got, want)
-	}
+	equals(t, want, got)
 }

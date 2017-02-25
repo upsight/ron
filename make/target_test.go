@@ -9,6 +9,8 @@ import (
 	"github.com/upsight/ron/color"
 )
 
+//testTargetEnv, testTargetEnvOutput = createTestEnv(nil)
+
 var (
 	testTargetEnv       *Env
 	testTargetEnvOutput io.Writer
@@ -64,11 +66,7 @@ prepAfterErr:
 `
 )
 
-func init() {
-	testTargetEnv, testTargetEnvOutput = createTestEnv(nil)
-}
-
-func createTestTargetConfig(stdOut *bytes.Buffer, stdErr *bytes.Buffer) (*TargetConfig, *bytes.Buffer, *bytes.Buffer) {
+func createTestTarget(t *testing.T, name string, stdOut *bytes.Buffer, stdErr *bytes.Buffer) (*Target, *bytes.Buffer, *bytes.Buffer) {
 	if stdOut == nil {
 		stdOut = &bytes.Buffer{}
 	}
@@ -76,122 +74,19 @@ func createTestTargetConfig(stdOut *bytes.Buffer, stdErr *bytes.Buffer) (*Target
 		stdErr = &bytes.Buffer{}
 	}
 
-	tgConf, _ := NewTargetConfig(testTargetEnv, []*Config{
-		&Config{Targets: DefaultTargetConfig},
-		&Config{Targets: testNewTargets},
-	}, stdOut, stdErr)
-	return tgConf, stdOut, stdErr
-}
-
-func createTestTarget(name string, stdOut *bytes.Buffer, stdErr *bytes.Buffer) (*Target, *bytes.Buffer, *bytes.Buffer) {
-	if stdOut == nil {
-		stdOut = &bytes.Buffer{}
-	}
-	if stdErr == nil {
-		stdErr = &bytes.Buffer{}
-	}
-
-	tgConf, _ := NewTargetConfig(testTargetEnv, []*Config{
-		&Config{Targets: DefaultTargetConfig},
+	testTargetEnv, _ = createTestEnv(t, nil)
+	tgConf, _ := NewTargetConfigs(testTargetEnv, []*Config{
+		&Config{Targets: DefaultTarget},
 		&Config{Targets: testNewTargets},
 	}, stdOut, stdErr)
 	target, _ := tgConf.Target(name)
 	return target, stdOut, stdErr
 }
 
-func TestMakeNewTargetConfig(t *testing.T) {
-	_, err := NewTargetConfig(testTargetEnv, []*Config{
-		&Config{Targets: DefaultTargetConfig},
-		&Config{Targets: testNewTargets},
-	}, nil, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestMakeNewTargetConfigBadDefault(t *testing.T) {
-	stdOut := &bytes.Buffer{}
-	_, err := NewTargetConfig(testTargetEnv, []*Config{
-		&Config{Targets: `:"`},
-		&Config{Targets: testNewTargets},
-	}, stdOut, nil)
-	if err == nil {
-		t.Fatal("expected err for invalid default config")
-	}
-}
-
-func TestMakeNewTargetConfigBadNew(t *testing.T) {
-	_, err := NewTargetConfig(testTargetEnv, []*Config{
-		&Config{Targets: DefaultTargetConfig},
-		&Config{Targets: `:"`},
-	}, nil, nil)
-	if err == nil {
-		t.Fatal("expected err for invalid new config")
-	}
-}
-
-func TestMakeNewTargetConfigList(t *testing.T) {
-	stdOut := &bytes.Buffer{}
-	tc, err := NewTargetConfig(testTargetEnv, []*Config{
-		&Config{Targets: DefaultTargetConfig},
-		&Config{Targets: testNewTargets},
-	}, stdOut, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tc.List(false, "")
-	if !strings.Contains(stdOut.String(), "hello description\n") {
-		t.Fatalf("expected hello with description in list of targets, got %s", stdOut.String())
-	}
-	if !strings.Contains(stdOut.String(), "prep description") {
-		t.Fatalf("expected prep in list of targets, got %s", stdOut.String())
-	}
-}
-
-func TestMakeNewTargetConfigListVerbose(t *testing.T) {
-	stdOut := &bytes.Buffer{}
-	tc, err := NewTargetConfig(testTargetEnv, []*Config{
-		&Config{Targets: DefaultTargetConfig},
-		&Config{Targets: testNewTargets},
-	}, stdOut, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tc.List(true, "")
-	if !strings.Contains(stdOut.String(), "hello description") {
-		t.Fatalf("expected list of targets, got %s", stdOut.String())
-	}
-}
-
-func TestMakeNewTargetConfigListVerboseFuzzyGlobbing(t *testing.T) {
-	stdOut := &bytes.Buffer{}
-	tc, err := NewTargetConfig(testTargetEnv, []*Config{
-		&Config{Targets: DefaultTargetConfig},
-		&Config{Targets: testNewTargets},
-	}, stdOut, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tc.List(true, "docker*")
-	if !strings.Contains(stdOut.String(), "docker_stats") {
-		t.Errorf("expected to get docker_stats in targets")
-	}
-	stdOut.Reset()
-	tc.List(true, "docker_c*")
-	if !strings.Contains(stdOut.String(), "docker_clean") {
-		t.Errorf("expected to get docker_stats in targets")
-	}
-	if strings.Contains(stdOut.String(), "docker_stats") {
-		t.Errorf("expected to filter out other docker targets")
-	}
-}
-
 func TestMakeTargetRun(t *testing.T) {
-	target, writer, _ := createTestTarget("prep", nil, nil)
+	target, writer, _ := createTestTarget(t, "prep", nil, nil)
 	_, _, err := target.Run()
-	if err != nil {
-		t.Fatal(err)
-	}
+	ok(t, err)
 	want := "hello\nprep1\nprep2\nprep3\nprep4\ngoodbye"
 	if !strings.Contains(writer.String(), want) {
 		t.Errorf("unexpected output want %s got %s", want, writer.String())
@@ -199,18 +94,16 @@ func TestMakeTargetRun(t *testing.T) {
 }
 
 func TestMakeTargetRunShellExec(t *testing.T) {
-	target, writer, _ := createTestTarget("shellExec", nil, nil)
+	target, writer, _ := createTestTarget(t, "shellExec", nil, nil)
 	_, _, err := target.Run()
-	if err != nil {
-		t.Fatal(err)
-	}
+	ok(t, err)
 	if !strings.Contains(writer.String(), "test") {
 		t.Errorf(`cmd not executed want "test" got %s`, writer.String())
 	}
 }
 
 func TestMakeTargetRunBeforeErr(t *testing.T) {
-	target, _, _ := createTestTarget("prepBeforeErr", nil, nil)
+	target, _, _ := createTestTarget(t, "prepBeforeErr", nil, nil)
 	status, _, _ := target.Run()
 	if status == 0 {
 		t.Fatal("expected non 0 exit status on prep before")
@@ -218,7 +111,7 @@ func TestMakeTargetRunBeforeErr(t *testing.T) {
 }
 
 func TestMakeTargetRunAfterErr(t *testing.T) {
-	target, _, _ := createTestTarget("prepAfterErr", nil, nil)
+	target, _, _ := createTestTarget(t, "prepAfterErr", nil, nil)
 	status, _, _ := target.Run()
 	if status == 0 {
 		t.Fatal("expected non 0 exit status on prep after")
@@ -226,23 +119,19 @@ func TestMakeTargetRunAfterErr(t *testing.T) {
 }
 
 func TestMakeTargetList(t *testing.T) {
-	target, stdOut, _ := createTestTarget("prep", nil, nil)
+	target, stdOut, _ := createTestTarget(t, "prep", nil, nil)
 	target.Description = "description"
 	target.List(false, 0)
 	want := color.Yellow("prep") + " description\n"
-	if stdOut.String() != want {
-		t.Errorf("want %s got: %s", want, stdOut.String())
-	}
+	equals(t, want, stdOut.String())
 	stdOut.Reset()
 	target.List(false, 10)
 	want = color.Yellow("prep") + "       description\n"
-	if stdOut.String() != want {
-		t.Errorf("want %s got: %s", want, stdOut.String())
-	}
+	equals(t, want, stdOut.String())
 }
 
 func TestMakeTargetListVerbose(t *testing.T) {
-	target, stdOut, _ := createTestTarget("prep", nil, nil)
+	target, stdOut, _ := createTestTarget(t, "prep", nil, nil)
 	target.List(true, 0)
 	want := "before: hello, prep"
 	if !strings.Contains(stdOut.String(), want) {
@@ -259,7 +148,7 @@ func TestMakeTargetListVerbose(t *testing.T) {
 }
 
 func TestMakeTargetListBadWriter(t *testing.T) {
-	target, _, _ := createTestTarget("prep", nil, nil)
+	target, _, _ := createTestTarget(t, "prep", nil, nil)
 	target.W = &badWriter{}
 	target.List(true, 0)
 }

@@ -110,7 +110,7 @@ func (c *Command) Run(args []string) (int, error) {
 		return 0, nil
 	}
 	// Create targets
-	targetConfig, err := mke.NewTargetConfig(envs, configs, c.W, c.WErr)
+	targetConfig, err := mke.NewTargetConfigs(envs, configs, c.W, c.WErr)
 	if err != nil {
 		return 1, err
 	}
@@ -120,8 +120,10 @@ func (c *Command) Run(args []string) (int, error) {
 	}
 	if listTargetsClean {
 		targets := []string{}
-		for k := range targetConfig.Targets {
-			targets = append(targets, k)
+		for _, tf := range targetConfig.Files {
+			for k := range tf.Targets {
+				targets = append(targets, k)
+			}
 		}
 		sort.Strings(targets)
 		for _, t := range targets {

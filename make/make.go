@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	// DefaultTargetConfig is what is in root/make/default.yaml if not specified.
-	DefaultTargetConfig string
+	// DefaultTarget is what is in root/make/default.yaml if not specified.
+	DefaultTarget string
 	// DefaultEnvConfig is what is in root/make/default.yaml if not specified.
 	DefaultEnvConfig string
 )
@@ -22,11 +22,11 @@ type MSS map[string]string
 // Make runs targets...like make kinda
 type Make struct {
 	Env          *Env
-	TargetConfig *TargetConfig
+	TargetConfigs *TargetConfigs
 }
 
-// EnvTargetConfig ...
-type EnvTargetConfig struct {
+// EnvTargetConfigs ...
+type EnvTargetConfigs struct {
 	Envs    []map[string]string `json:"envs" yaml:"envs"`
 	Targets map[string]struct {
 		Before      []string `json:"before" yaml:"before"`
@@ -45,10 +45,10 @@ func init() {
 }
 
 // NewMake creates a Make type with config embedded.
-func NewMake(env *Env, targets *TargetConfig) (*Make, error) {
+func NewMake(env *Env, targets *TargetConfigs) (*Make, error) {
 	m := &Make{
 		Env:          env,
-		TargetConfig: targets,
+		TargetConfigs: targets,
 	}
 	return m, nil
 }
@@ -56,7 +56,7 @@ func NewMake(env *Env, targets *TargetConfig) (*Make, error) {
 // Run executes the given target name.
 func (m *Make) Run(names ...string) error {
 	for _, name := range names {
-		target, ok := m.TargetConfig.Target(name)
+		target, ok := m.TargetConfigs.Target(name)
 		if ok {
 			status, out, err := target.Run()
 			if status != 0 || err != nil {

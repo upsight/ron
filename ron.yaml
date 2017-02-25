@@ -96,7 +96,7 @@ targets:
     before:
       - prep
     cmd: |
-      go run cmd/main.go
+      go run cmd/ron/main.go
   _vendor_update:
     description: >
       To update vendor packages run this. Assumes glide is installed.
