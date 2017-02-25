@@ -11,8 +11,6 @@ import (
 	"syscall"
 
 	"github.com/upsight/ron/color"
-
-	"github.com/pkar/runit"
 )
 
 var (
@@ -78,7 +76,7 @@ func Command(cmdString string, stdOut io.Writer, stdErr io.Writer, envs map[stri
 	exitStatus := 0
 	err := cmd.Run()
 	if err != nil {
-		exitStatus = runit.GetExitStatus(err)
+		exitStatus = GetExitStatus(err)
 	}
 	return exitStatus, err
 }
@@ -88,4 +86,15 @@ func Command(cmdString string, stdOut io.Writer, stdErr io.Writer, envs map[stri
 func CommandNoWait(cmdString string, stdOut io.Writer, stdErr io.Writer, envs map[string]string) (*exec.Cmd, error) {
 	cmd := getCmd(cmdString, stdOut, stdErr, envs)
 	return cmd, cmd.Start()
+}
+
+// GetExitStatus determines the exit status code of an err
+// from a command that was run.
+func GetExitStatus(waitError error) int {
+	if exitError, ok := waitError.(*exec.ExitError); ok {
+		if waitStatus, ok := exitError.Sys().(syscall.WaitStatus); ok {
+			return waitStatus.ExitStatus()
+		}
+	}
+	return 1
 }

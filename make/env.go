@@ -14,10 +14,10 @@ import (
 )
 
 const (
-	// SENTINEL is the first character looked for in envs to
+	// ExecSentinel is the first character looked for in envs to
 	// signify that the value should be executed in the shell
 	// and the output assigned to the key.
-	SENTINEL = "+"
+	ExecSentinel = "+"
 )
 
 // Env takes a raw yaml environment definition and expands and
@@ -95,11 +95,11 @@ func (e *Env) process() error {
 		e.Config[k] = v
 	}
 
-	// env variable values that start with SENTINEL will be
+	// env variable values that start with ExecSentinel will be
 	// executed to get the output value and set.
 	// All variables expand any envs defined in order of definition.
 	for _, k := range e.keyOrder {
-		if strings.HasPrefix(e.Config[k], SENTINEL) {
+		if strings.HasPrefix(e.Config[k], ExecSentinel) {
 			out, err := e.getExec(k)
 			if err != nil {
 				return err
@@ -111,7 +111,7 @@ func (e *Env) process() error {
 	return nil
 }
 
-// getExec executes the command defined by the SENTINEL string.
+// getExec executes the command defined by the ExecSentinel string.
 func (e *Env) getExec(key string) (out string, err error) {
 	stdOut := bytes.Buffer{}
 	stdErr := bytes.Buffer{}
@@ -131,7 +131,7 @@ func (e *Env) getExec(key string) (out string, err error) {
 // It returns the value, which will be empty if the variable is not present.
 func (e *Env) Getenv(key string) string {
 	v, _ := e.Config[key]
-	if strings.HasPrefix(v, SENTINEL) {
+	if strings.HasPrefix(v, ExecSentinel) {
 		out, err := e.getExec(key)
 		if err == nil {
 			v = out

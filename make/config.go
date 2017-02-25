@@ -16,9 +16,9 @@ import (
 
 // Config contains the raw strings from a loaded config file.
 type Config struct {
-	IsDefault bool
-	Envs      string
-	Targets   string
+	Filepath string
+	Envs     string
+	Targets  string
 }
 
 // extractConfigError parses the error for line number and then
@@ -40,7 +40,7 @@ func extractConfigError(path, input string, inErr error) error {
 					text = append(text, line)
 				}
 			}
-			err = fmt.Errorf("%s %s\n%s\n", path, inErr.Error(), strings.Join(text, "\n"))
+			err = fmt.Errorf("%s %s\n%s ", path, inErr.Error(), strings.Join(text, "\n"))
 		}
 	}
 	return err
@@ -79,15 +79,17 @@ func LoadConfigFiles(defaultYamlPath, overrideYamlPath string) ([]*Config, strin
 	var err error
 	defaultConfig := &Config{
 		Envs:    DefaultEnvConfig,
-		Targets: DefaultTargetConfig,
+		Targets: DefaultTargets,
 	}
 	if defaultYamlPath != "" {
 		defaultConfig, err = LoadConfigFile(defaultYamlPath)
 		if err != nil {
 			return nil, "", err
 		}
+		defaultConfig.Filepath = defaultYamlPath
+	} else {
+		defaultConfig.Filepath = "make/default.yaml"
 	}
-	defaultConfig.IsDefault = true
 	defaultConfig.Envs = strings.TrimSpace(defaultConfig.Envs)
 	defaultConfig.Targets = strings.TrimSpace(defaultConfig.Targets)
 	configs = append(configs, defaultConfig)
@@ -105,6 +107,7 @@ func LoadConfigFiles(defaultYamlPath, overrideYamlPath string) ([]*Config, strin
 		if err != nil {
 			return nil, "", err
 		}
+		overrideConfig.Filepath = overrideYamlPath
 		overrideConfig.Envs = strings.TrimSpace(overrideConfig.Envs)
 		overrideConfig.Targets = strings.TrimSpace(overrideConfig.Targets)
 		configs = append(configs, overrideConfig)
@@ -125,7 +128,7 @@ var LoadConfigFile = func(path string) (*Config, error) {
 		return nil, err
 	}
 
-	var c *EnvTargetConfig
+	var c *EnvTargetConfigs
 	err = yaml.Unmarshal([]byte(content), &c)
 	if err != nil {
 		return nil, extractConfigError(path, content, err)
@@ -155,7 +158,7 @@ var LoadDefault = func() error {
 		return err
 	}
 
-	var c *EnvTargetConfig
+	var c *EnvTargetConfigs
 	err = yaml.Unmarshal([]byte(content), &c)
 	if err != nil {
 		return err
@@ -173,7 +176,7 @@ var LoadDefault = func() error {
 	if err != nil {
 		return err
 	}
-	DefaultTargetConfig = string(d)
+	DefaultTargets = string(d)
 
 	return nil
 }

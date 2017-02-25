@@ -2,15 +2,14 @@ package make
 
 import (
 	"bytes"
-	"log"
-	"reflect"
 	"strings"
 	"testing"
 )
 
 type parseOSEnvsTest struct {
-	in  []string
-	out MSS
+	name string
+	in   []string
+	out  MSS
 }
 
 var testNewEnvConfig = `
@@ -23,14 +22,12 @@ var testNewEnvConfig = `
 - NOOP:
 `
 
-func createTestEnv(writer *bytes.Buffer) (*Env, *bytes.Buffer) {
+func createTestEnv(t *testing.T, writer *bytes.Buffer) (*Env, *bytes.Buffer) {
 	if writer == nil {
 		writer = &bytes.Buffer{}
 	}
 	e, err := NewEnv([]*Config{&Config{Envs: DefaultEnvConfig}}, MSS{"UNAME": "plan9"}, writer)
-	if err != nil {
-		log.Fatal(err)
-	}
+	ok(t, err)
 	return e, writer
 }
 
@@ -45,39 +42,40 @@ func TestMakeNewEnvStdout(t *testing.T) {
 
 func TestMakeIn(t *testing.T) {
 	type inTest struct {
+		name   string
 		inKey  string
 		inKeys []string
 		out    bool
 	}
 
 	var inTests = []inTest{
-		{"a", []string{"a", "b", "c"}, true},
-		{"x", []string{"a", "b", "c"}, false},
-		{"a", []string{"b", "z", "y", "a"}, true},
-		{"a", []string{"b", "z", "a", "y"}, true},
-		{"x", []string{}, false},
-		{"", []string{}, false},
+		{"", "a", []string{"a", "b", "c"}, true},
+		{"", "x", []string{"a", "b", "c"}, false},
+		{"", "a", []string{"b", "z", "y", "a"}, true},
+		{"", "a", []string{"b", "z", "a", "y"}, true},
+		{"", "x", []string{}, false},
+		{"", "", []string{}, false},
 	}
-	for i, test := range inTests {
-		got := in(test.inKey, test.inKeys)
-		if got != test.out {
-			t.Fatalf("%d want %+v got %+v", i, test.out, got)
-		}
+	for _, tt := range inTests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := in(tt.inKey, tt.inKeys)
+			equals(t, tt.out, got)
+		})
 	}
 }
 
 func TestMakeParseOSEnvs(t *testing.T) {
 	var parseOSEnvTests = []parseOSEnvsTest{
-		{[]string{"a="}, MSS{"a": ""}},
-		{[]string{"a=b"}, MSS{"a": "b"}},
-		{[]string{"a=b = 1"}, MSS{"a": "b = 1"}},
-		{[]string{"b=> &>1"}, MSS{"b": "> &>1"}},
+		{"", []string{"a="}, MSS{"a": ""}},
+		{"", []string{"a=b"}, MSS{"a": "b"}},
+		{"", []string{"a=b = 1"}, MSS{"a": "b = 1"}},
+		{"", []string{"b=> &>1"}, MSS{"b": "> &>1"}},
 	}
-	for i, test := range parseOSEnvTests {
-		got := ParseOSEnvs(test.in)
-		if !reflect.DeepEqual(got, test.out) {
-			t.Fatalf("%d want %+v got %+v", i, test.out, got)
-		}
+	for _, tt := range parseOSEnvTests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ParseOSEnvs(tt.in)
+			equals(t, tt.out, got)
+		})
 	}
 }
 
@@ -87,9 +85,7 @@ func TestMakeEnvProcess(t *testing.T) {
 		&Config{Envs: DefaultEnvConfig},
 		&Config{Envs: testNewEnvConfig},
 	}, ParseOSEnvs([]string{"HELLO=hello", "ABC=+pwd"}), writer)
-	if err != nil {
-		t.Fatal(err)
-	}
+	ok(t, err)
 
 	got := e.Config["HELLO"]
 	want := `hello`
@@ -99,9 +95,7 @@ func TestMakeEnvProcess(t *testing.T) {
 
 	got = e.Config["UNAME"]
 	want = `plan9`
-	if got != want {
-		t.Fatalf("got %s want %s", got, want)
-	}
+	equals(t, want, got)
 
 	got = e.Config["APP_UNDERSCORE"]
 	want = "ron"
@@ -181,20 +175,14 @@ func TestMakeEnvPrintRaw(t *testing.T) {
 	writer := &bytes.Buffer{}
 	e, _ := NewEnv([]*Config{&Config{Envs: DefaultEnvConfig}}, MSS{}, writer)
 	err := e.PrintRaw()
-	if err != nil {
-		t.Fatal(err)
-	}
-	expected := DefaultEnvConfig + "\n"
+	ok(t, err)
+	want := DefaultEnvConfig + "\n"
 	got := writer.String()
-	if got != expected {
-		t.Fatalf("expected \"%s\", got \"%s\"", expected, got)
-	}
+	equals(t, want, got)
 }
 
 func TestMakeEnvPrintRawBadWriter(t *testing.T) {
 	e, err := NewEnv([]*Config{&Config{Envs: DefaultEnvConfig}}, MSS{}, badWriter{})
-	if err != nil {
-		t.Fatal(err)
-	}
+	ok(t, err)
 	e.PrintRaw()
 }
