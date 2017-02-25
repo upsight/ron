@@ -76,7 +76,7 @@ func createTestTarget(t *testing.T, name string, stdOut *bytes.Buffer, stdErr *b
 
 	testTargetEnv, _ = createTestEnv(t, nil)
 	tgConf, _ := NewTargetConfigs(testTargetEnv, []*Config{
-		&Config{Targets: DefaultTarget},
+		&Config{Targets: DefaultTargets},
 		&Config{Targets: testNewTargets},
 	}, stdOut, stdErr)
 	target, _ := tgConf.Target(name)

@@ -79,7 +79,7 @@ func LoadConfigFiles(defaultYamlPath, overrideYamlPath string) ([]*Config, strin
 	var err error
 	defaultConfig := &Config{
 		Envs:    DefaultEnvConfig,
-		Targets: DefaultTarget,
+		Targets: DefaultTargets,
 	}
 	if defaultYamlPath != "" {
 		defaultConfig, err = LoadConfigFile(defaultYamlPath)
@@ -176,7 +176,7 @@ var LoadDefault = func() error {
 	if err != nil {
 		return err
 	}
-	DefaultTarget = string(d)
+	DefaultTargets = string(d)
 
 	return nil
 }

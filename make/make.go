@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	// DefaultTarget is what is in root/make/default.yaml if not specified.
-	DefaultTarget string
+	// DefaultTargets is what is in root/make/default.yaml if not specified.
+	DefaultTargets string
 	// DefaultEnvConfig is what is in root/make/default.yaml if not specified.
 	DefaultEnvConfig string
 )
@@ -21,7 +21,7 @@ type MSS map[string]string
 
 // Make runs targets...like make kinda
 type Make struct {
-	Env          *Env
+	Env           *Env
 	TargetConfigs *TargetConfigs
 }
 
@@ -47,7 +47,7 @@ func init() {
 // NewMake creates a Make type with config embedded.
 func NewMake(env *Env, targets *TargetConfigs) (*Make, error) {
 	m := &Make{
-		Env:          env,
+		Env:           env,
 		TargetConfigs: targets,
 	}
 	return m, nil

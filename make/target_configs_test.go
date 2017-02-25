@@ -16,7 +16,7 @@ func createTestTargetConfigs(t *testing.T, stdOut *bytes.Buffer, stdErr *bytes.B
 
 	testTargetEnv, _ = createTestEnv(t, nil)
 	tgConf, _ := NewTargetConfigs(testTargetEnv, []*Config{
-		&Config{Targets: DefaultTarget},
+		&Config{Targets: DefaultTargets},
 		&Config{Targets: testNewTargets},
 	}, stdOut, stdErr)
 	return tgConf, stdOut, stdErr
@@ -26,7 +26,7 @@ func TestMakeNewTargetConfigsListVerboseFuzzyGlobbing(t *testing.T) {
 	stdOut := &bytes.Buffer{}
 	testTargetEnv, _ := createTestEnv(t, nil)
 	tc, err := NewTargetConfigs(testTargetEnv, []*Config{
-		&Config{Targets: DefaultTarget, Filepath: "default.yaml"},
+		&Config{Targets: DefaultTargets, Filepath: "default.yaml"},
 		&Config{Targets: testNewTargets, Filepath: "test.yaml"},
 	}, stdOut, nil)
 	if err != nil {
@@ -50,7 +50,7 @@ func TestMakeNewTargetConfigsListVerbose(t *testing.T) {
 	stdOut := &bytes.Buffer{}
 	testTargetEnv, _ := createTestEnv(t, nil)
 	tc, err := NewTargetConfigs(testTargetEnv, []*Config{
-		&Config{Targets: DefaultTarget},
+		&Config{Targets: DefaultTargets},
 		&Config{Targets: testNewTargets},
 	}, stdOut, nil)
 	ok(t, err)
@@ -64,7 +64,7 @@ func TestMakeNewTargetConfigsList(t *testing.T) {
 	stdOut := &bytes.Buffer{}
 	testTargetEnv, _ := createTestEnv(t, nil)
 	tc, err := NewTargetConfigs(testTargetEnv, []*Config{
-		&Config{Targets: DefaultTarget},
+		&Config{Targets: DefaultTargets},
 		&Config{Targets: testNewTargets},
 	}, stdOut, nil)
 	if err != nil {
@@ -94,7 +94,7 @@ func TestMakeNewTargetConfigsBadDefault(t *testing.T) {
 func TestMakeNewTargetConfigsBadNew(t *testing.T) {
 	testTargetEnv, _ := createTestEnv(t, nil)
 	_, err := NewTargetConfigs(testTargetEnv, []*Config{
-		&Config{Targets: DefaultTarget},
+		&Config{Targets: DefaultTargets},
 		&Config{Targets: `:"`},
 	}, nil, nil)
 	if err == nil {
@@ -105,7 +105,7 @@ func TestMakeNewTargetConfigsBadNew(t *testing.T) {
 func TestMakeNewTargetConfigs(t *testing.T) {
 	testTargetEnv, _ := createTestEnv(t, nil)
 	_, err := NewTargetConfigs(testTargetEnv, []*Config{
-		&Config{Targets: DefaultTarget},
+		&Config{Targets: DefaultTargets},
 		&Config{Targets: testNewTargets},
 	}, nil, nil)
 	ok(t, err)
