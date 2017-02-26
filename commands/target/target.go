@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/upsight/ron/execute"
-	mke "github.com/upsight/ron/make"
+	"github.com/upsight/ron/target"
 )
 
 // Command ...
@@ -88,7 +88,7 @@ func (c *Command) Run(args []string) (int, error) {
 		return 1, nil
 	}
 
-	configs, foundConfigDir, err := mke.LoadConfigFiles(defaultYamlPath, overrideYamlPath)
+	configs, foundConfigDir, err := target.LoadConfigFiles(defaultYamlPath, overrideYamlPath)
 	if err != nil {
 		return 1, err
 	}
@@ -98,7 +98,7 @@ func (c *Command) Run(args []string) (int, error) {
 		os.Chdir(foundConfigDir)
 	}
 	// Create env
-	envs, err := mke.NewEnv(configs, mke.ParseOSEnvs(os.Environ()), c.W)
+	envs, err := target.NewEnv(configs, target.ParseOSEnvs(os.Environ()), c.W)
 	if err != nil {
 		return 1, err
 	}
@@ -110,7 +110,7 @@ func (c *Command) Run(args []string) (int, error) {
 		return 0, nil
 	}
 	// Create targets
-	targetConfig, err := mke.NewTargetConfigs(envs, configs, c.W, c.WErr)
+	targetConfig, err := target.NewTargetConfigs(envs, configs, c.W, c.WErr)
 	if err != nil {
 		return 1, err
 	}
@@ -133,7 +133,7 @@ func (c *Command) Run(args []string) (int, error) {
 	}
 
 	// Create make runner
-	m, err := mke.NewMake(envs, targetConfig)
+	m, err := target.NewMake(envs, targetConfig)
 	if err != nil {
 		return 1, err
 	}
