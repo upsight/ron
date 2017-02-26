@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	mke "github.com/upsight/ron/make"
+	"github.com/upsight/ron/target"
 )
 
 var (
@@ -56,9 +56,9 @@ func TestRonRunUpgrade(t *testing.T) {
 }
 
 func TestRonRunUpgradeBadEnvs(t *testing.T) {
-	prevEnvs := mke.DefaultEnvConfig
-	defer func() { mke.DefaultEnvConfig = prevEnvs }()
-	mke.DefaultEnvConfig = `envs:"`
+	prevEnvs := target.DefaultEnvConfig
+	defer func() { target.DefaultEnvConfig = prevEnvs }()
+	target.DefaultEnvConfig = `envs:"`
 	args := []string{}
 	stdOut := &bytes.Buffer{}
 	stdErr := &bytes.Buffer{}
@@ -70,9 +70,9 @@ func TestRonRunUpgradeBadEnvs(t *testing.T) {
 }
 
 func TestRonRunUpgradeMissingLatestURL(t *testing.T) {
-	prevEnvs := mke.DefaultEnvConfig
-	defer func() { mke.DefaultEnvConfig = prevEnvs }()
-	mke.DefaultEnvConfig = `envs:`
+	prevEnvs := target.DefaultEnvConfig
+	defer func() { target.DefaultEnvConfig = prevEnvs }()
+	target.DefaultEnvConfig = `envs:`
 	args := []string{}
 	stdOut := &bytes.Buffer{}
 	stdErr := &bytes.Buffer{}

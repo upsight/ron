@@ -16,7 +16,7 @@ targets:
     description: Compile the default yaml asset to a go file.
     cmd: |
       go get -u github.com/jteeuwen/go-bindata/...
-      go-bindata -o make/default.go -pkg=make make/default.yaml
+      go-bindata -o make/default.go -pkg=target make/default.yaml
   install:
     description: Install ron to $GOPATH/bin
     before:

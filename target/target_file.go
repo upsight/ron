@@ -1,4 +1,4 @@
-package make
+package target
 
 // TargetFile is a mapping of the config file to its parsed targets.
 type TargetFile struct {

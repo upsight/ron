@@ -1,6 +1,6 @@
-// Package make implements gnu make like target processing from yaml files
+// Package target implements gnu make like target processing from yaml files
 // and OS environment variables.
-package make
+package target
 
 import (
 	"fmt"

@@ -7,14 +7,14 @@ import (
 	"strings"
 	"testing"
 
-	mke "github.com/upsight/ron/make"
+	"github.com/upsight/ron/target"
 )
 
 var (
-	mockLoadConfig = func(path string) (*mke.Config, error) {
+	mockLoadConfig = func(path string) (*target.Config, error) {
 		return nil, nil
 	}
-	mockLoadConfigErr = func(path string) (*mke.Config, error) {
+	mockLoadConfigErr = func(path string) (*target.Config, error) {
 		return nil, fmt.Errorf("bad config")
 	}
 )
@@ -78,9 +78,9 @@ func TestRonRunTargetConfigsList(t *testing.T) {
 }
 
 func TestRonRunTargetLoadDefaultErr(t *testing.T) {
-	prevLoadConfig := mke.LoadConfigFile
-	defer func() { mke.LoadConfigFile = prevLoadConfig }()
-	mke.LoadConfigFile = mockLoadConfigErr
+	prevLoadConfig := target.LoadConfigFile
+	defer func() { target.LoadConfigFile = prevLoadConfig }()
+	target.LoadConfigFile = mockLoadConfigErr
 
 	stdOut := &bytes.Buffer{}
 	stdErr := &bytes.Buffer{}
@@ -96,9 +96,9 @@ func TestRonRunTargetLoadDefaultErr(t *testing.T) {
 }
 
 func TestRonRunTargetLoadOverrideErr(t *testing.T) {
-	prevLoadConfig := mke.LoadConfigFile
-	defer func() { mke.LoadConfigFile = prevLoadConfig }()
-	mke.LoadConfigFile = mockLoadConfigErr
+	prevLoadConfig := target.LoadConfigFile
+	defer func() { target.LoadConfigFile = prevLoadConfig }()
+	target.LoadConfigFile = mockLoadConfigErr
 
 	stdOut := &bytes.Buffer{}
 	stdErr := &bytes.Buffer{}

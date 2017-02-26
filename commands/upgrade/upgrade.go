@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 
 	"github.com/upsight/ron/execute"
-	mke "github.com/upsight/ron/make"
+	"github.com/upsight/ron/target"
 )
 
 // Command ...
@@ -94,7 +94,7 @@ func (c *Command) Run(args []string) (int, error) {
 		return 1, err
 	}
 	// Create envs
-	envs, err := mke.NewEnv([]*mke.Config{&mke.Config{Envs: mke.DefaultEnvConfig}}, mke.ParseOSEnvs(os.Environ()), c.W)
+	envs, err := target.NewEnv([]*target.Config{&target.Config{Envs: target.DefaultEnvConfig}}, target.ParseOSEnvs(os.Environ()), c.W)
 	if err != nil {
 		return 1, err
 	}
