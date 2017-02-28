@@ -47,16 +47,16 @@ func (bw badWriter) Write(p []byte) (n int, err error) {
 
 func TestNewMake(t *testing.T) {
 	e, _ := createTestEnv(t, nil)
-	tc, _, _ := createTestTargetConfigs(t, nil, nil)
+	tc, _, _ := createTestConfigs(t, nil, nil)
 	_, err := NewMake(e, tc)
 	ok(t, err)
 }
 
 func TestMakeRun(t *testing.T) {
 	e, _ := createTestEnv(t, nil)
-	tc, tcW, _ := createTestTargetConfigs(t, nil, nil)
+	tc, tcW, _ := createTestConfigs(t, nil, nil)
 	m, _ := NewMake(e, tc)
-	err := m.Run("prep")
+	err := m.Run("ron:prep")
 	ok(t, err)
 	want := "hello\nprep1\nprep2\nprep3\nprep4\ngoodbye\n"
 	equals(t, want, tcW.String())
@@ -70,7 +70,7 @@ func TestMakeRun(t *testing.T) {
 
 func TestMakeRunErr(t *testing.T) {
 	e, _ := createTestEnv(t, nil)
-	tc, _, _ := createTestTargetConfigs(t, nil, nil)
+	tc, _, _ := createTestConfigs(t, nil, nil)
 	m, _ := NewMake(e, tc)
 	err := m.Run("err")
 	if err == nil {
@@ -80,7 +80,7 @@ func TestMakeRunErr(t *testing.T) {
 
 func TestMakeRunNoTarget(t *testing.T) {
 	e, _ := createTestEnv(t, nil)
-	tc, _, _ := createTestTargetConfigs(t, nil, nil)
+	tc, _, _ := createTestConfigs(t, nil, nil)
 	m, _ := NewMake(e, tc)
 	err := m.Run("prop")
 	if err == nil {

@@ -11,10 +11,10 @@ import (
 )
 
 var (
-	mockLoadConfig = func(path string) (*target.Config, error) {
+	mockLoadConfig = func(path string) (*target.RawConfig, error) {
 		return nil, nil
 	}
-	mockLoadConfigErr = func(path string) (*target.Config, error) {
+	mockLoadConfigErr = func(path string) (*target.RawConfig, error) {
 		return nil, fmt.Errorf("bad config")
 	}
 )
@@ -60,7 +60,7 @@ func TestRonRunTargetListEnvs(t *testing.T) {
 	}
 }
 
-func TestRonRunTargetConfigsList(t *testing.T) {
+func TestRonRunConfigsList(t *testing.T) {
 	stdOut := &bytes.Buffer{}
 	stdErr := &bytes.Buffer{}
 	c := &Command{W: stdOut, WErr: stdErr}

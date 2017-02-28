@@ -15,7 +15,7 @@ import (
 // Target contains the set of commands to run along with
 // any before and after targets to run.
 type Target struct {
-	targetConfigs *TargetConfigs
+	targetConfigs *Configs
 	Name          string    `json:"name" yaml:"name"`
 	Before        []string  `json:"before" yaml:"before"`
 	After         []string  `json:"after" yaml:"after"`

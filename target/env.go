@@ -26,7 +26,7 @@ type Env struct {
 	Config   MSS       // the key value of expanded variables
 	W        io.Writer // underlying writer
 	OSEnvs   MSS       // the initial environment variables
-	configs  []*Config
+	configs  []*RawConfig
 	keyOrder []string // the env keys order of preference
 }
 
@@ -43,7 +43,7 @@ func ParseOSEnvs(osEnvs []string) MSS {
 
 // NewEnv create a new environment variable parser similar
 // to make variables.
-func NewEnv(configs []*Config, osEnvs MSS, writer io.Writer) (*Env, error) {
+func NewEnv(configs []*RawConfig, osEnvs MSS, writer io.Writer) (*Env, error) {
 	if writer == nil {
 		writer = os.Stdout
 	}
@@ -63,15 +63,6 @@ func NewEnv(configs []*Config, osEnvs MSS, writer io.Writer) (*Env, error) {
 	return e, nil
 }
 
-func in(key string, keys []string) bool {
-	for _, k := range keys {
-		if k == key {
-			return true
-		}
-	}
-	return false
-}
-
 // process takes the raw env configuration yaml and converts
 // it to expanded variable definitions based on passed in
 // environment variables and yaml config.
@@ -85,7 +76,7 @@ func (e *Env) process() error {
 		for _, env := range envs {
 			for k, v := range env {
 				e.Config[k] = v
-				if !in(k, e.keyOrder) {
+				if !keyIn(k, e.keyOrder) {
 					e.keyOrder = append(e.keyOrder, k)
 				}
 			}

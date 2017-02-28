@@ -1,0 +1,14 @@
+envs:
+  - APP: default.yaml
+targets:
+  echo:
+    cmd: |
+      echo default.yaml
+  default:
+    description: default default description
+    cmd: |
+      echo default default
+  prep:
+    description: default prep description
+    cmd: |
+      echo default prep

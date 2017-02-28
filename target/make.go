@@ -9,31 +9,13 @@ import (
 	"github.com/upsight/ron/color"
 )
 
-var (
-	// DefaultTargets is what is in root/make/default.yaml if not specified.
-	DefaultTargets string
-	// DefaultEnvConfig is what is in root/make/default.yaml if not specified.
-	DefaultEnvConfig string
-)
-
 // MSS is an alias for map[string]string
 type MSS map[string]string
 
 // Make runs targets...like make kinda
 type Make struct {
-	Env           *Env
-	TargetConfigs *TargetConfigs
-}
-
-// EnvTargetConfigs ...
-type EnvTargetConfigs struct {
-	Envs    []map[string]string `json:"envs" yaml:"envs"`
-	Targets map[string]struct {
-		Before      []string `json:"before" yaml:"before"`
-		After       []string `json:"after" yaml:"after"`
-		Cmd         string   `json:"cmd" yaml:"cmd"`
-		Description string   `json:"description" yaml:"description"`
-	} `json:"targets" yaml:"targets"`
+	Env     *Env
+	Configs *Configs
 }
 
 func init() {
@@ -45,10 +27,10 @@ func init() {
 }
 
 // NewMake creates a Make type with config embedded.
-func NewMake(env *Env, targets *TargetConfigs) (*Make, error) {
+func NewMake(env *Env, targets *Configs) (*Make, error) {
 	m := &Make{
-		Env:           env,
-		TargetConfigs: targets,
+		Env:     env,
+		Configs: targets,
 	}
 	return m, nil
 }
@@ -56,7 +38,7 @@ func NewMake(env *Env, targets *TargetConfigs) (*Make, error) {
 // Run executes the given target name.
 func (m *Make) Run(names ...string) error {
 	for _, name := range names {
-		target, ok := m.TargetConfigs.Target(name)
+		target, ok := m.Configs.Target(name)
 		if ok {
 			status, out, err := target.Run()
 			if status != 0 || err != nil {
