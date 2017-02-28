@@ -1,0 +1,54 @@
+{{$path := "export PATH=$GOPATH/bin:$PATH"}}
+{{$list := "$(go list ./... | grep -v vendor/ | grep -v '_/go')"}}
+envs:
+  - APP: +echo ${PWD##*/}
+  - ARCH: amd64
+  - UNAME: +uname | tr '[:upper:]' '[:lower:]'
+  - TAG: v0.0.1
+  - RELEASES: linux darwin windows
+  - PACKAGE_VERSION: +git describe --always --dirty --tags | tr '-' '_'
+targets:
+  build:
+    description: Compile a binary to ./bin/${UNAME}_${ARCH}
+    cmd: |
+      mkdir -p bin/${UNAME}_${ARCH}
+      GOARCH=$ARCH GOOS=$UNAME go build -o bin/${UNAME}_${ARCH}/$APP-$TAG -ldflags "-X $REPO.GitCommit=$PACKAGE_VERSION -X $REPO.AppVersion=$TAG -X $REPO.AppName=$APP" cmd/$APP/*.go
+  build_all:
+    description: Compile a binary to ./bin/linux_${ARCH} and ./bin/darwin_${ARCH}
+    cmd: |
+      for os in $RELEASES; do
+        printf "building to bin/${os}_${ARCH}...\n"
+        mkdir -p bin/${os}_${ARCH}
+        GOARCH=$ARCH GOOS=$os go build -o bin/${os}_${ARCH}/$APP-$TAG -ldflags "-X $REPO.GitCommit=$PACKAGE_VERSION -X $REPO.AppVersion=$TAG -X $REPO.AppName=$APP" cmd/$APP/*.go
+      done
+  cover:
+    description: Run go coverage and open a browser to show the heatmap.
+    cmd: |
+      rm bin/coverage* || true
+      echo "mode: count" > bin/coverage.out
+      # run tests and create coverage profile
+      for pkg in $(go list ./... | grep -v /vendor/); do
+        go test -covermode=count -coverprofile=bin/coverage.out.tmp $pkg
+        tail -n +2 bin/coverage.out.tmp >> bin/coverage.out || true
+        rm bin/coverage.out.tmp || true
+      done
+
+      # check heatmap
+      go tool cover -html=bin/coverage.out
+  lint:
+    description: Run golint
+    cmd: |
+      for pkg in $(go list ./... | grep -v /vendor/); do
+        golint $pkg
+      done
+  test:
+    description: Run go test.
+    after:
+      - lint
+      - vet
+    cmd: |
+      go test -cover {{$list}}
+  vet:
+    description: Run go vet on ./src.
+    cmd: |
+      go vet {{$list}}

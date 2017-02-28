@@ -1,0 +1,28 @@
+envs:
+targets:
+  clean_old:
+    description: Remove all containers and images that are over a week old.
+    cmd: |
+      docker ps -a | grep 'weeks ago' | awk '{print $1}' | xargs docker rm || true
+      docker ps -a | grep 'months ago' | awk '{print $1}' | xargs docker rm || true
+      docker images | grep 'weeks ago' | awk '{print $3}' | xargs docker rmi || true
+      docker images | grep 'months ago' | awk '{print $3}' | xargs docker rmi || true
+  clean:
+    description: Remove all Docker containers and dangling images.
+    before:
+      - clean_images
+    cmd: |
+      docker rm -f $(docker ps -a -q) || true
+  clean_exited:
+    description: Remove exited containers.
+    cmd: |
+      docker ps -a | grep Exit | cut -d ' ' -f 1 | xargs docker rm
+      docker ps -a | grep Created | cut -d ' ' -f 1 | xargs docker rm
+  clean_images:
+    description: Remove dangling images.
+    cmd: |
+      docker rmi $(docker images -q --filter "dangling=true") || true
+  stats:
+    description: Show the stats of running containers.
+    cmd: |
+      docker stats `docker ps | awk '{print $NF}' | grep -v NAMES`

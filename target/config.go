@@ -14,8 +14,38 @@ import (
 	template "github.com/upsight/ron/template"
 )
 
-// Config contains the raw strings from a loaded config file.
-type Config struct {
+var (
+	// DefaultTargets is what is in project root target/default.yaml if not specified.
+	DefaultTargets string
+	// DefaultEnvConfig is what is in project root target/default.yaml if not specified.
+	DefaultEnvConfig string
+)
+
+// ConfigFile is used to unmarshal configuration files.
+type ConfigFile struct {
+	Envs    []map[string]string `json:"envs" yaml:"envs"`
+	Targets map[string]struct {
+		Before      []string `json:"before" yaml:"before"`
+		After       []string `json:"after" yaml:"after"`
+		Cmd         string   `json:"cmd" yaml:"cmd"`
+		Description string   `json:"description" yaml:"description"`
+	} `json:"targets" yaml:"targets"`
+}
+
+// EnvsString is used for debugging the loaded envs.
+func (c *ConfigFile) EnvsString() string {
+	envs, _ := yaml.Marshal(c.Envs)
+	return string(envs)
+}
+
+// TargetsString is used for debugging the loaded targets.
+func (c *ConfigFile) TargetsString() string {
+	targets, _ := yaml.Marshal(c.Targets)
+	return string(targets)
+}
+
+// RawConfig contains the raw strings from a loaded config file.
+type RawConfig struct {
 	Filepath string
 	Envs     string
 	Targets  string
@@ -73,22 +103,20 @@ func findConfigFile() (string, error) {
 // that file instead. In that case, the path to that file will be returned
 // so that the caller can change the working directory to that folder before
 // running further commands.
-func LoadConfigFiles(defaultYamlPath, overrideYamlPath string) ([]*Config, string, error) {
-	configs := []*Config{}
+func LoadConfigFiles(defaultYamlPath, overrideYamlPath string) ([]*RawConfig, string, error) {
+	configs := []*RawConfig{}
 
 	var err error
-	defaultConfig := &Config{
-		Envs:    DefaultEnvConfig,
-		Targets: DefaultTargets,
+	defaultConfig := &RawConfig{
+		Filepath: "builtin:target/default.yaml",
+		Envs:     DefaultEnvConfig,
+		Targets:  DefaultTargets,
 	}
 	if defaultYamlPath != "" {
 		defaultConfig, err = LoadConfigFile(defaultYamlPath)
 		if err != nil {
 			return nil, "", err
 		}
-		defaultConfig.Filepath = defaultYamlPath
-	} else {
-		defaultConfig.Filepath = "make/default.yaml"
 	}
 	defaultConfig.Envs = strings.TrimSpace(defaultConfig.Envs)
 	defaultConfig.Targets = strings.TrimSpace(defaultConfig.Targets)
@@ -102,6 +130,7 @@ func LoadConfigFiles(defaultYamlPath, overrideYamlPath string) ([]*Config, strin
 		}
 		foundConfigDir = filepath.Dir(overrideYamlPath)
 	}
+
 	if overrideYamlPath != "" {
 		overrideConfig, err := LoadConfigFile(overrideYamlPath)
 		if err != nil {
@@ -118,7 +147,11 @@ func LoadConfigFiles(defaultYamlPath, overrideYamlPath string) ([]*Config, strin
 
 // LoadConfigFile will open a given file path and return it's raw
 // envs and targets.
-var LoadConfigFile = func(path string) (*Config, error) {
+var LoadConfigFile = func(path string) (*RawConfig, error) {
+	path, err := filepath.Abs(path)
+	if err != nil {
+		return nil, err
+	}
 	f, err := fi.NewFile(path)
 	if err != nil {
 		return nil, err
@@ -128,7 +161,7 @@ var LoadConfigFile = func(path string) (*Config, error) {
 		return nil, err
 	}
 
-	var c *EnvTargetConfigs
+	var c *ConfigFile
 	err = yaml.Unmarshal([]byte(content), &c)
 	if err != nil {
 		return nil, extractConfigError(path, content, err)
@@ -144,21 +177,21 @@ var LoadConfigFile = func(path string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Config{Envs: string(envs), Targets: string(targets)}, nil
+	return &RawConfig{Filepath: path, Envs: string(envs), Targets: string(targets)}, nil
 }
 
 // LoadDefault loads the binary yaml file envs and targets.
 var LoadDefault = func() error {
-	defaultYaml, err := Asset("make/default.yaml")
+	defaultYaml, err := Asset("target/default.yaml")
 	if err != nil {
 		return err
 	}
-	content, err := template.RenderGo("builtin:make/default.yaml", string(defaultYaml))
+	content, err := template.RenderGo("builtin:target/default.yaml", string(defaultYaml))
 	if err != nil {
 		return err
 	}
 
-	var c *EnvTargetConfigs
+	var c *ConfigFile
 	err = yaml.Unmarshal([]byte(content), &c)
 	if err != nil {
 		return err

@@ -11,13 +11,13 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-func mustLoadConfigFile(t *testing.T, path string, isDefault bool) *Config {
+func mustLoadConfigFile(t *testing.T, path string, isDefault bool) *RawConfig {
 	c, err := LoadConfigFile(path)
 	ok(t, err)
 	return c
 }
 
-func TestMakeFindConfigFile(t *testing.T) {
+func TestFindConfigFile(t *testing.T) {
 	wd, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
@@ -28,7 +28,7 @@ func TestMakeFindConfigFile(t *testing.T) {
 	equals(t, expected, found)
 }
 
-func TestMakeLoadConfigFiles(t *testing.T) {
+func TestLoadConfigFiles(t *testing.T) {
 	d, err := os.Getwd()
 	ok(t, err)
 	d = filepath.Dir(d)
@@ -36,13 +36,13 @@ func TestMakeLoadConfigFiles(t *testing.T) {
 		name             string
 		defaultYamlPath  string
 		overrideYamlPath string
-		expectedConfigs  []*Config
+		expectedConfigs  []*RawConfig
 		expectedFound    string
 	}{
 		{
 			name:          "",
 			expectedFound: d,
-			expectedConfigs: []*Config{
+			expectedConfigs: []*RawConfig{
 				mustLoadConfigFile(t, "default.yaml", true),
 				mustLoadConfigFile(t, "../ron.yaml", false),
 			},
@@ -51,7 +51,7 @@ func TestMakeLoadConfigFiles(t *testing.T) {
 			name:             "",
 			overrideYamlPath: "testdata/target_test.yaml",
 			expectedFound:    "",
-			expectedConfigs: []*Config{
+			expectedConfigs: []*RawConfig{
 				mustLoadConfigFile(t, "default.yaml", true),
 				mustLoadConfigFile(t, "testdata/target_test.yaml", false),
 			},
@@ -59,7 +59,6 @@ func TestMakeLoadConfigFiles(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Logf("testing: %+v", tt)
 			configs, found, err := LoadConfigFiles(tt.defaultYamlPath, tt.overrideYamlPath)
 			ok(t, err)
 			matched := true
@@ -82,46 +81,46 @@ func TestMakeLoadConfigFiles(t *testing.T) {
 	}
 }
 
-func TestMakeLoadDefaultAssetMissing(t *testing.T) {
-	defaultAssetFunc, _ := _bindata["make/default.yaml"]
+func TestLoadDefaultAssetMissing(t *testing.T) {
+	defaultAssetFunc, _ := _bindata["target/default.yaml"]
 	defer func() {
-		_bindata["make/default.yaml"] = defaultAssetFunc
+		_bindata["target/default.yaml"] = defaultAssetFunc
 	}()
 
-	delete(_bindata, "make/default.yaml")
+	delete(_bindata, "target/default.yaml")
 	err := LoadDefault()
 	if err == nil {
 		t.Fatal("expected missing config error")
 	}
 }
 
-func TestMakeLoadConfigFile(t *testing.T) {
+func TestLoadConfigFile(t *testing.T) {
 	_, err := LoadConfigFile(path.Join(wrkdir, "testdata", "target_test.yaml"))
 	ok(t, err)
 }
 
-func TestMakeLoadConfigFilePathErr(t *testing.T) {
+func TestLoadConfigFilePathErr(t *testing.T) {
 	_, err := LoadConfigFile(path.Join(wrkdir, "nothere.yaml"))
 	if err == nil {
 		t.Fatal("expected path err")
 	}
 }
 
-func TestMakeLoadConfigFileYamlErr(t *testing.T) {
+func TestLoadConfigFileYamlErr(t *testing.T) {
 	_, err := LoadConfigFile(path.Join(wrkdir, "../target_test.go"))
 	if err == nil {
 		t.Fatal("expected path err")
 	}
 }
 
-func TestMakeLoadConfigEmpty(t *testing.T) {
+func TestLoadConfigEmpty(t *testing.T) {
 	_, err := LoadConfigFile(path.Join(wrkdir, "testdata", "empty.yaml"))
 	if err == nil {
 		t.Fatalf(`expected error "empty file requires envs and target keys" got %v`, err)
 	}
 }
 
-func TestMakeExtractConfigError(t *testing.T) {
+func TestExtractConfigError(t *testing.T) {
 	config := `
 envs:
   - APP: ron
@@ -148,7 +147,7 @@ targets:
 a:
 b:
 c: `)
-	var c *EnvTargetConfigs
+	var c *ConfigFile
 	err := yaml.Unmarshal([]byte(config), &c)
 	if err == nil {
 		t.Error("yaml should be invalid")

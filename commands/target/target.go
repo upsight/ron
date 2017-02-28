@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"sort"
 	"strings"
 
 	"github.com/upsight/ron/execute"
@@ -40,7 +39,7 @@ func (c *Command) Run(args []string) (int, error) {
 
 	ron contains a default set of envs and targets that can be inspected with the
 	flag options listed above. Those can also be overidden with another yaml file.
-	If no -default or -yaml is provided and in the current working directory there
+	If no -default or -yaml is provided and in the current or parent working directory there
 	exists a ron.yaml, then those will be used as the -yaml option.
 
 	The yaml config should contain a list of "envs" and a
@@ -88,6 +87,14 @@ func (c *Command) Run(args []string) (int, error) {
 		return 1, nil
 	}
 
+	// FIXME When using globs and os.Args without quoting the target, the glob will match
+	// any files in the directory.
+	//
+	// go run cmd/ron/main.go t -default=target/default.yaml -l b*
+	// [/var/folders/rs/0jn_2dpn36x53x8tvgvptr740000gn/T/go-build477108253/command-line-arguments/_obj/exe/main t -default=target/default.yaml -l bin]
+	// go run cmd/ron/main.go t -default=target/default.yaml -l "b*"
+	// [/var/folders/rs/0jn_2dpn36x53x8tvgvptr740000gn/T/go-build906759632/command-line-arguments/_obj/exe/main t -default=target/default.yaml -l b*]
+
 	configs, foundConfigDir, err := target.LoadConfigFiles(defaultYamlPath, overrideYamlPath)
 	if err != nil {
 		return 1, err
@@ -110,7 +117,7 @@ func (c *Command) Run(args []string) (int, error) {
 		return 0, nil
 	}
 	// Create targets
-	targetConfig, err := target.NewTargetConfigs(envs, configs, c.W, c.WErr)
+	targetConfig, err := target.NewConfigs(envs, configs, c.W, c.WErr)
 	if err != nil {
 		return 1, err
 	}
@@ -119,16 +126,7 @@ func (c *Command) Run(args []string) (int, error) {
 		return 0, nil
 	}
 	if listTargetsClean {
-		targets := []string{}
-		for _, tf := range targetConfig.Files {
-			for k := range tf.Targets {
-				targets = append(targets, k)
-			}
-		}
-		sort.Strings(targets)
-		for _, t := range targets {
-			targetConfig.StdOut.Write([]byte(t + " "))
-		}
+		targetConfig.ListClean()
 		return 0, nil
 	}
 
