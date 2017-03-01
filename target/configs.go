@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 
 	"github.com/upsight/ron/color"
 	yaml "gopkg.in/yaml.v2"
@@ -86,9 +85,10 @@ LOOP_FILES:
 			targetNames = append(targetNames, k)
 		}
 		sort.Strings(targetNames)
+		basename := tf.Basename()
 		tc.StdOut.Write([]byte(color.Green(tf.Filepath + "\n")))
 		for _, targetName := range targetNames {
-			if target, ok := tc.Target(targetName); ok {
+			if target, ok := tc.Target(basename + ":" + targetName); ok {
 				target.List(verbose, targetNameWidth)
 			}
 		}
@@ -100,10 +100,9 @@ LOOP_FILES:
 func (tc *Configs) ListClean() {
 	targets := []string{}
 	for _, tf := range tc.Files {
-		basename := filepath.Base(tf.Filepath)
-		prefix := strings.TrimSuffix(basename, filepath.Ext(basename))
+		basename := tf.Basename()
 		for k := range tf.Targets {
-			targets = append(targets, prefix+":"+k)
+			targets = append(targets, basename+":"+k)
 		}
 	}
 	sort.Strings(targets)
