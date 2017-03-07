@@ -5,6 +5,7 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
+	"strings"
 	"testing"
 
 	"os"
@@ -75,19 +76,46 @@ func TestLoadConfigFiles(t *testing.T) {
 		expectedFound    string
 	}{
 		{
-			name:          "",
+			name:          "00 no override option finds parent ron.yaml",
 			expectedFound: d,
 			expectedConfigs: []*RawConfig{
-				mustLoadConfigFile(t, "default.yaml", true),
 				mustLoadConfigFile(t, "../ron.yaml", false),
+				mustLoadConfigFile(t, "../.ron/docker.yaml", true),
+				mustLoadConfigFile(t, "../.ron/go.yaml", true),
+				mustLoadConfigFile(t, "./default.yaml", true),
 			},
 		},
 		{
-			name:             "",
+			name:             "01 override option",
 			overrideYamlPath: "testdata/target_test.yaml",
 			expectedFound:    "",
 			expectedConfigs: []*RawConfig{
+				mustLoadConfigFile(t, "testdata/target_test.yaml", false),
+				mustLoadConfigFile(t, "../.ron/docker.yaml", true),
+				mustLoadConfigFile(t, "../.ron/go.yaml", true),
 				mustLoadConfigFile(t, "default.yaml", true),
+			},
+		},
+		{
+			name:            "02 default option",
+			defaultYamlPath: "testdata/target_test.yaml",
+			expectedFound:   d,
+			expectedConfigs: []*RawConfig{
+				mustLoadConfigFile(t, "../ron.yaml", false),
+				mustLoadConfigFile(t, "../.ron/docker.yaml", true),
+				mustLoadConfigFile(t, "../.ron/go.yaml", true),
+				mustLoadConfigFile(t, "testdata/target_test.yaml", false),
+			},
+		},
+		{
+			name:             "03 default and override options",
+			overrideYamlPath: "testdata/target_test.yaml",
+			defaultYamlPath:  "testdata/target_test.yaml",
+			expectedFound:    "",
+			expectedConfigs: []*RawConfig{
+				mustLoadConfigFile(t, "testdata/target_test.yaml", false),
+				mustLoadConfigFile(t, "../.ron/docker.yaml", true),
+				mustLoadConfigFile(t, "../.ron/go.yaml", true),
 				mustLoadConfigFile(t, "testdata/target_test.yaml", false),
 			},
 		},
@@ -96,20 +124,9 @@ func TestLoadConfigFiles(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			configs, found, err := LoadConfigFiles(tt.defaultYamlPath, tt.overrideYamlPath)
 			ok(t, err)
-			matched := true
-			if len(configs) != len(tt.expectedConfigs) {
-				matched = false
-			}
-			if !matched {
-				t.Fail()
-				t.Log("expected:\n")
-				for _, c := range tt.expectedConfigs {
-					t.Logf("- %+v\n", *c)
-				}
-				t.Log("got:\n")
-				for _, c := range configs {
-					t.Logf("- %+v\n", *c)
-				}
+			for i, config := range configs {
+				equals(t, strings.TrimSpace(tt.expectedConfigs[i].Envs), strings.TrimSpace(config.Envs))
+				equals(t, strings.TrimSpace(tt.expectedConfigs[i].Targets), strings.TrimSpace(config.Targets))
 			}
 			equals(t, tt.expectedFound, found)
 		})

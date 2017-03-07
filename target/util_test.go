@@ -3,6 +3,7 @@ package target
 import (
 	"os"
 	"os/user"
+	"runtime"
 	"testing"
 )
 
@@ -55,12 +56,16 @@ func Test_keyIn(t *testing.T) {
 }
 
 func Test_homeDir(t *testing.T) {
-	// test without $HOME set which tries to cd && pwd
-	u, err := user.Current()
-	ok(t, err)
-	equals(t, u.HomeDir, homeDir())
+	if runtime.GOOS == "linux" {
+		os.Unsetenv("HOME")
+		// test without $HOME set which tries to cd && pwd
+		u, err := user.Current()
+		ok(t, err)
+		equals(t, u.HomeDir, homeDir())
+	}
+
 	// test with $HOME set
-	err = os.Setenv("HOME", "/home/test")
+	err := os.Setenv("HOME", "/home/test")
 	ok(t, err)
 	equals(t, "/home/test", homeDir())
 }

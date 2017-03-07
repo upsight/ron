@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 )
 
@@ -39,20 +40,45 @@ func homeDir() string {
 		return home
 	}
 
-	if runtime.GOOS == "windows" {
+	switch {
+	case runtime.GOOS == "windows":
 		home := os.Getenv("HOMEDRIVE") + os.Getenv("HOMEPATH")
 		if home == "" {
 			home = os.Getenv("USERPROFILE")
 		}
 		return home
-	}
-
-	var stdout bytes.Buffer
-	cmd := exec.Command("sh", "-c", "cd && pwd")
-	cmd.Stdout = &stdout
-	if err := cmd.Run(); err != nil {
+	case runtime.GOOS == "linux":
+		var stdout bytes.Buffer
+		cmd := exec.Command("getent", "passwd", strconv.Itoa(os.Getuid()))
+		cmd.Stdout = &stdout
+		if err := cmd.Run(); err != nil {
+			return ""
+		}
+		passwd := strings.TrimSpace(stdout.String())
+		if passwd == "" {
+			return ""
+		}
+		// travis:x:1000:1000::/home/travis:/bin/bash
+		tokens := strings.SplitN(passwd, ":", 7)
+		if len(tokens) > 5 {
+			return tokens[5]
+		}
 		return ""
 	}
 
-	return strings.TrimSpace(stdout.String())
+	// NOTE: `cd && pwd` will fail if $HOME is not set so this will never
+	// work. Here for reference
+	// sh: line 0: cd: HOME not set
+	//
+	// stdout.Reset()
+	// var stderr bytes.Buffer
+	// cmd := exec.Command("sh", "-c", "cd && pwd")
+	// cmd.Stdout = &stdout
+	// cmd.Stderr = &stderr
+	// if err := cmd.Run(); err != nil {
+	// 	fmt.Println(stderr.String())
+	// 	return ""
+	// }
+
+	return ""
 }
