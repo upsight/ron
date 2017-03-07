@@ -56,7 +56,6 @@ func NewConfigs(env *Env, configs []*RawConfig, stdOut io.Writer, stdErr io.Writ
 		}
 		t.Files = append(t.Files, f)
 	}
-	sort.Sort(t)
 	return t, nil
 }
 
@@ -127,16 +126,4 @@ func (tc *Configs) Target(name string) (*Target, bool) {
 		}
 	}
 	return nil, false
-}
-
-func (tc *Configs) Len() int {
-	return len(tc.Files)
-}
-
-func (tc *Configs) Less(i, j int) bool {
-	return tc.Files[i].Filepath < tc.Files[j].Filepath
-}
-
-func (tc *Configs) Swap(i, j int) {
-	tc.Files[i], tc.Files[j] = tc.Files[j], tc.Files[i]
 }

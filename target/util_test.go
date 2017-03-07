@@ -1,6 +1,10 @@
 package target
 
-import "testing"
+import (
+	"os"
+	"os/user"
+	"testing"
+)
 
 func Test_splitTarget(t *testing.T) {
 	type args struct {
@@ -48,4 +52,15 @@ func Test_keyIn(t *testing.T) {
 			equals(t, tt.out, got)
 		})
 	}
+}
+
+func Test_homeDir(t *testing.T) {
+	// test without $HOME set which tries to cd && pwd
+	u, err := user.Current()
+	ok(t, err)
+	equals(t, u.HomeDir, homeDir())
+	// test with $HOME set
+	err = os.Setenv("HOME", "/home/test")
+	ok(t, err)
+	equals(t, "/home/test", homeDir())
 }

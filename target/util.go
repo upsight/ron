@@ -1,7 +1,11 @@
 package target
 
 import (
+	"bytes"
+	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -25,4 +29,30 @@ func keyIn(key string, keys []string) bool {
 		}
 	}
 	return false
+}
+
+// homeDir will attempt to find the home directory of the current
+// user. An empty string returned means the users home directory
+// could not be found.
+func homeDir() string {
+	if home := os.Getenv("HOME"); home != "" {
+		return home
+	}
+
+	if runtime.GOOS == "windows" {
+		home := os.Getenv("HOMEDRIVE") + os.Getenv("HOMEPATH")
+		if home == "" {
+			home = os.Getenv("USERPROFILE")
+		}
+		return home
+	}
+
+	var stdout bytes.Buffer
+	cmd := exec.Command("sh", "-c", "cd && pwd")
+	cmd.Stdout = &stdout
+	if err := cmd.Run(); err != nil {
+		return ""
+	}
+
+	return strings.TrimSpace(stdout.String())
 }

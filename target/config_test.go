@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path"
 	"path/filepath"
+	"sort"
 	"testing"
 
 	"os"
@@ -17,15 +18,49 @@ func mustLoadConfigFile(t *testing.T, path string, isDefault bool) *RawConfig {
 	return c
 }
 
-func TestFindConfigFile(t *testing.T) {
+func Test_findConfigFile(t *testing.T) {
 	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
+	ok(t, err)
 	expected := filepath.Join(filepath.Dir(wd), "ron.yaml")
 	found, err := findConfigFile()
 	ok(t, err)
 	equals(t, expected, found)
+}
+
+func Test_findConfigDirs(t *testing.T) {
+	wd, err := os.Getwd()
+	ok(t, err)
+	want := filepath.Join(wd, "testdata", ConfigDirName)
+
+	dirs, err := findConfigDirs(filepath.Join(wd, "testdata"))
+	ok(t, err)
+
+	found := false
+	for _, dir := range dirs {
+		if dir == want {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("wanted %s in dirs, got %+v", want, dirs)
+	}
+}
+
+func Test_findConfigDirFiles(t *testing.T) {
+	wd, err := os.Getwd()
+	ok(t, err)
+	want := []string{
+		filepath.Join(wd, "testdata/.ron/default.yaml"),
+		filepath.Join(wd, "testdata/.ron/empty.yaml"),
+		filepath.Join(wd, "testdata/.ron/ron.yaml"),
+	}
+
+	dirs := []string{filepath.Join(wd, "testdata/.ron")}
+	files, err := findConfigDirFiles(dirs)
+	ok(t, err)
+	sort.Strings(files)
+	equals(t, want, files)
 }
 
 func TestLoadConfigFiles(t *testing.T) {
