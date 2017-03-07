@@ -56,16 +56,27 @@ func Test_keyIn(t *testing.T) {
 }
 
 func Test_homeDir(t *testing.T) {
+	u, err := user.Current()
+	ok(t, err)
+
 	if runtime.GOOS == "linux" {
 		os.Unsetenv("HOME")
-		// test without $HOME set which tries to cd && pwd
-		u, err := user.Current()
-		ok(t, err)
+		// test without $HOME set which tries to use getent
 		equals(t, u.HomeDir, homeDir())
+	}
+	if runtime.GOOS == "windows" {
+		os.Setenv("HOMEDRIVE", "C:")
+		os.Setenv("HOMEPATH", `\Users\test`)
+		equals(t, `C:\Users\test`, homeDir())
+
+		os.Setenv("HOMEDRIVE", "")
+		os.Setenv("HOMEPATH", ``)
+		os.Setenv("USERPROFILE", `C:\Users\test`)
+		equals(t, `C:\Users\test`, homeDir())
 	}
 
 	// test with $HOME set
-	err := os.Setenv("HOME", "/home/test")
+	err = os.Setenv("HOME", "/home/test")
 	ok(t, err)
 	equals(t, "/home/test", homeDir())
 }
