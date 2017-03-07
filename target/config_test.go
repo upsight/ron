@@ -22,7 +22,7 @@ func mustLoadConfigFile(t *testing.T, path string, isDefault bool) *RawConfig {
 func Test_findConfigFile(t *testing.T) {
 	wd, err := os.Getwd()
 	ok(t, err)
-	expected := filepath.Join(filepath.Dir(wd), "ron.yaml")
+	expected := filepath.Join(filepath.Dir(wd), ConfigFileName)
 	found, err := findConfigFile()
 	ok(t, err)
 	equals(t, expected, found)
@@ -130,19 +130,6 @@ func TestLoadConfigFiles(t *testing.T) {
 			}
 			equals(t, tt.expectedFound, found)
 		})
-	}
-}
-
-func TestLoadDefaultAssetMissing(t *testing.T) {
-	defaultAssetFunc, _ := _bindata["target/default.yaml"]
-	defer func() {
-		_bindata["target/default.yaml"] = defaultAssetFunc
-	}()
-
-	delete(_bindata, "target/default.yaml")
-	err := LoadDefault()
-	if err == nil {
-		t.Fatal("expected missing config error")
 	}
 }
 

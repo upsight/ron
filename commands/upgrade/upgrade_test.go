@@ -9,8 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/upsight/ron/target"
 )
 
 var (
@@ -31,56 +29,6 @@ func init() {
 		}
 		fmt.Fprintln(w, []byte("binaryfile"))
 	}))
-}
-
-func TestRonRunUpgrade(t *testing.T) {
-	/*
-		TODO
-			prevLoadLatestBinary := loadLatestBinary
-			defer func() { loadLatestBinary = prevLoadLatestBinary }()
-			loadLatestBinary = mockLoadLatestBinary
-
-			args := []string{}
-			stdOut := &bytes.Buffer{}
-			stdErr := &bytes.Buffer{}
-			c := &Command{W: stdOut, WErr: stdErr, AppName: "a"}
-			c.Run(args)
-			if stdErr.String() != "" {
-				t.Fatalf("expected empty err got %s", stdErr.String())
-			}
-			want := fmt.Sprintf("%s\n", c.AppName)
-			if stdOut.String() != want {
-				t.Logf("upgrade command want %s got %s", want, stdOut.String())
-			}
-	*/
-}
-
-func TestRonRunUpgradeBadEnvs(t *testing.T) {
-	prevEnvs := target.DefaultEnvConfig
-	defer func() { target.DefaultEnvConfig = prevEnvs }()
-	target.DefaultEnvConfig = `envs:"`
-	args := []string{}
-	stdOut := &bytes.Buffer{}
-	stdErr := &bytes.Buffer{}
-	c := &Command{W: stdOut, WErr: stdErr, AppName: "a"}
-	status, err := c.Run(args)
-	if status == 0 {
-		t.Errorf("expected status non 0 got %d %+v", status, err)
-	}
-}
-
-func TestRonRunUpgradeMissingLatestURL(t *testing.T) {
-	prevEnvs := target.DefaultEnvConfig
-	defer func() { target.DefaultEnvConfig = prevEnvs }()
-	target.DefaultEnvConfig = `envs:`
-	args := []string{}
-	stdOut := &bytes.Buffer{}
-	stdErr := &bytes.Buffer{}
-	c := &Command{W: stdOut, WErr: stdErr, AppName: "a"}
-	status, err := c.Run(args)
-	if status != 1 && err.Error() != "LATEST_URL env key not set" {
-		t.Errorf("expected status 1 got %d %+v", status, err)
-	}
 }
 
 func TestRonRunUpgradeLoadLatestBinaryErr(t *testing.T) {

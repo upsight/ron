@@ -24,11 +24,15 @@ var testNewEnvConfig = `
 
 func TestMakeNewEnv(t *testing.T) {
 	writer := &bytes.Buffer{}
-	NewEnv([]*RawConfig{&RawConfig{Envs: DefaultEnvConfig}}, MSS{}, writer)
+	envs, _, err := BuiltinDefault()
+	ok(t, err)
+	NewEnv([]*RawConfig{&RawConfig{Envs: envs}}, MSS{}, writer)
 }
 
 func TestMakeNewEnvStdout(t *testing.T) {
-	NewEnv([]*RawConfig{&RawConfig{Envs: DefaultEnvConfig}}, MSS{}, nil)
+	envs, _, err := BuiltinDefault()
+	ok(t, err)
+	NewEnv([]*RawConfig{&RawConfig{Envs: envs}}, MSS{}, nil)
 }
 
 func TestMakeParseOSEnvs(t *testing.T) {
@@ -48,8 +52,10 @@ func TestMakeParseOSEnvs(t *testing.T) {
 
 func TestMakeEnvProcess(t *testing.T) {
 	writer := &bytes.Buffer{}
+	envs, _, err := BuiltinDefault()
+	ok(t, err)
 	e, err := NewEnv([]*RawConfig{
-		&RawConfig{Envs: DefaultEnvConfig},
+		&RawConfig{Envs: envs},
 		&RawConfig{Envs: testNewEnvConfig},
 	}, ParseOSEnvs([]string{"HELLO=hello", "ABC=+pwd"}), writer)
 	ok(t, err)
@@ -76,8 +82,10 @@ func TestMakeEnvProcess(t *testing.T) {
 
 func TestMakeEnvProcessEnv(t *testing.T) {
 	writer := &bytes.Buffer{}
+	envs, _, err := BuiltinDefault()
+	ok(t, err)
 	e, err := NewEnv([]*RawConfig{
-		&RawConfig{Envs: DefaultEnvConfig},
+		&RawConfig{Envs: envs},
 		&RawConfig{Envs: testNewEnvConfig},
 	}, ParseOSEnvs([]string{}), writer)
 	if err != nil {
@@ -93,8 +101,10 @@ func TestMakeEnvProcessEnv(t *testing.T) {
 
 func TestMakeEnvProcessBadCommand(t *testing.T) {
 	writer := &bytes.Buffer{}
-	_, err := NewEnv([]*RawConfig{
-		&RawConfig{Envs: DefaultEnvConfig},
+	envs, _, err := BuiltinDefault()
+	ok(t, err)
+	_, err = NewEnv([]*RawConfig{
+		&RawConfig{Envs: envs},
 		&RawConfig{Envs: testNewEnvConfig + "\nHELLO=+hello"},
 	}, ParseOSEnvs([]string{}), writer)
 	if err == nil {
@@ -124,7 +134,9 @@ func TestMakeEnvProcessBadYamlNewEnvs(t *testing.T) {
 
 func TestMakeEnvList(t *testing.T) {
 	writer := &bytes.Buffer{}
-	e, _ := NewEnv([]*RawConfig{&RawConfig{Envs: DefaultEnvConfig}}, MSS{}, writer)
+	envs, _, err := BuiltinDefault()
+	ok(t, err)
+	e, _ := NewEnv([]*RawConfig{&RawConfig{Envs: envs}}, MSS{}, writer)
 	e.List()
 	got := writer.String()
 	want := "ron\n"
@@ -134,22 +146,28 @@ func TestMakeEnvList(t *testing.T) {
 }
 
 func TestMakeEnvListBadWriter(t *testing.T) {
-	e, _ := NewEnv([]*RawConfig{&RawConfig{Envs: DefaultEnvConfig}}, MSS{}, badWriter{})
+	envs, _, err := BuiltinDefault()
+	ok(t, err)
+	e, _ := NewEnv([]*RawConfig{&RawConfig{Envs: envs}}, MSS{}, badWriter{})
 	e.List()
 }
 
 func TestMakeEnvPrintRaw(t *testing.T) {
 	writer := &bytes.Buffer{}
-	e, _ := NewEnv([]*RawConfig{&RawConfig{Envs: DefaultEnvConfig}}, MSS{}, writer)
-	err := e.PrintRaw()
+	envs, _, err := BuiltinDefault()
 	ok(t, err)
-	want := DefaultEnvConfig + "\n"
+	e, _ := NewEnv([]*RawConfig{&RawConfig{Envs: envs}}, MSS{}, writer)
+	err = e.PrintRaw()
+	ok(t, err)
+	want := envs + "\n"
 	got := writer.String()
 	equals(t, want, got)
 }
 
 func TestMakeEnvPrintRawBadWriter(t *testing.T) {
-	e, err := NewEnv([]*RawConfig{&RawConfig{Envs: DefaultEnvConfig}}, MSS{}, badWriter{})
+	envs, _, err := BuiltinDefault()
+	ok(t, err)
+	e, err := NewEnv([]*RawConfig{&RawConfig{Envs: envs}}, MSS{}, badWriter{})
 	ok(t, err)
 	e.PrintRaw()
 }

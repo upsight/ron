@@ -2,12 +2,7 @@
 // and OS environment variables.
 package target
 
-import (
-	"fmt"
-	"log"
-
-	"github.com/upsight/ron/color"
-)
+import "fmt"
 
 // MSS is an alias for map[string]string
 type MSS map[string]string
@@ -16,14 +11,6 @@ type MSS map[string]string
 type Make struct {
 	Env     *Env
 	Configs *Configs
-}
-
-func init() {
-	err := LoadDefault()
-	if err != nil {
-		log.Println(color.Red(err.Error()))
-		return
-	}
 }
 
 // NewMake creates a Make type with config embedded.

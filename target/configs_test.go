@@ -37,7 +37,9 @@ func createTestEnv(t *testing.T, writer *bytes.Buffer) (*Env, *bytes.Buffer) {
 	if writer == nil {
 		writer = &bytes.Buffer{}
 	}
-	e, err := NewEnv([]*RawConfig{&RawConfig{Envs: DefaultEnvConfig}}, MSS{"UNAME": "plan9"}, writer)
+	envs, _, err := BuiltinDefault()
+	ok(t, err)
+	e, err := NewEnv([]*RawConfig{&RawConfig{Envs: envs}}, MSS{"UNAME": "plan9"}, writer)
 	ok(t, err)
 	return e, writer
 }
