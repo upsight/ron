@@ -1,6 +1,7 @@
 package target
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -85,7 +86,7 @@ LOOP_FILES:
 		}
 		sort.Strings(targetNames)
 		basename := tf.Basename()
-		tc.StdOut.Write([]byte(color.Green(tf.Filepath + "\n")))
+		tc.StdOut.Write([]byte(color.Green(fmt.Sprintf("(%s) %s\n", basename, tf.Filepath))))
 		for _, targetName := range targetNames {
 			if target, ok := tc.Target(basename + ":" + targetName); ok {
 				target.List(verbose, targetNameWidth)
