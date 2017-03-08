@@ -85,6 +85,17 @@ func (c *Commander) Add(cmd Command) {
 	sort.Sort(c)
 }
 
+// List will space seperate the list of possible commands.
+func (c *Commander) List(writer io.Writer) {
+	names := []string{}
+	for _, cmd := range c.Commands {
+		for k := range cmd.Aliases() {
+			names = append(names, k)
+		}
+	}
+	fmt.Fprintf(writer, strings.Join(names, " "))
+}
+
 // Usage displays the available commands.
 func (c *Commander) Usage(writer io.Writer) {
 	fmt.Fprintf(writer, "Usage: %s <command>\n\nAvailable commands are:\n", AppName)

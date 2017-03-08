@@ -27,7 +27,7 @@ func (c *Command) Run(args []string) (int, error) {
 	f := flag.NewFlagSet(c.Name, flag.ExitOnError)
 	f.SetOutput(c.WErr)
 	f.Usage = func() {
-		fmt.Fprintf(c.W, "Usage: %s %s --watch <path> --restart <command>\n", c.AppName, c.Name)
+		fmt.Fprintf(c.W, "Usage: %s %s -watch <path> -wait -restart <command> -ignore <patterns>\n", c.AppName, c.Name)
 		f.PrintDefaults()
 	}
 
