@@ -2,35 +2,20 @@
 // and OS environment variables.
 package target
 
-import (
-	"fmt"
-	"log"
-
-	"github.com/upsight/ron/color"
-)
+import "fmt"
 
 // MSS is an alias for map[string]string
 type MSS map[string]string
 
 // Make runs targets...like make kinda
 type Make struct {
-	Env     *Env
 	Configs *Configs
 }
 
-func init() {
-	err := LoadDefault()
-	if err != nil {
-		log.Println(color.Red(err.Error()))
-		return
-	}
-}
-
 // NewMake creates a Make type with config embedded.
-func NewMake(env *Env, targets *Configs) (*Make, error) {
+func NewMake(configs *Configs) (*Make, error) {
 	m := &Make{
-		Env:     env,
-		Configs: targets,
+		Configs: configs,
 	}
 	return m, nil
 }
@@ -39,13 +24,12 @@ func NewMake(env *Env, targets *Configs) (*Make, error) {
 func (m *Make) Run(names ...string) error {
 	for _, name := range names {
 		target, ok := m.Configs.Target(name)
-		if ok {
-			status, out, err := target.Run()
-			if status != 0 || err != nil {
-				return fmt.Errorf("%d %s %s", status, out, err)
-			}
-		} else {
+		if !ok {
 			return fmt.Errorf("%s target not found", name)
+		}
+		status, out, err := target.Run()
+		if status != 0 || err != nil {
+			return fmt.Errorf("%d %s %s", status, out, err)
 		}
 	}
 	return nil

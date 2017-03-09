@@ -4,10 +4,16 @@ envs:
   - APP: +echo ${PWD##*/}
   - ARCH: amd64
   - UNAME: +uname | tr '[:upper:]' '[:lower:]'
+  - GO_VERSION: 1.8
   - TAG: v0.0.1
   - RELEASES: linux darwin windows
   - PACKAGE_VERSION: +git describe --always --dirty --tags | tr '-' '_'
+  - REPO: github.com/upsight/ron
 targets:
+  echo:
+    cmd: |
+      echo blah
+      echo $APP
   build:
     description: Compile a binary to ./bin/${UNAME}_${ARCH}
     cmd: |
@@ -41,14 +47,33 @@ targets:
       for pkg in $(go list ./... | grep -v /vendor/); do
         golint $pkg
       done
+  lint_install:
+    description: >
+      go get golint.
+    cmd: |
+      go get -u github.com/golang/lint/golint
   test:
     description: Run go test.
     after:
-      - lint
-      - vet
+      - go:lint
+      - go:vet
     cmd: |
       go test -cover {{$list}}
+  race:
+    description: Run go race detector.
+    cmd: |
+      go test -cover -race {{$list}}
+  bench:
+    description: Run any benchmarks.
+    cmd: |
+      go test -bench=. {{$list}}
   vet:
     description: Run go vet on ./src.
     cmd: |
       go vet {{$list}}
+  install:
+    cmd: |
+      curl -o go.tar.gz https://storage.googleapis.com/golang/go${GO_VERSION}.${UNAME}-${ARCH}.tar.gz
+      yum install -y tar || true
+      tar -C /usr/local -xzf go.tar.gz
+      rm go.tar.gz

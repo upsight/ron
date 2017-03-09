@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"path"
 	"path/filepath"
+	"sort"
+	"strings"
 	"testing"
 
 	"os"
@@ -17,15 +19,49 @@ func mustLoadConfigFile(t *testing.T, path string, isDefault bool) *RawConfig {
 	return c
 }
 
-func TestFindConfigFile(t *testing.T) {
+func Test_findConfigFile(t *testing.T) {
 	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	expected := filepath.Join(filepath.Dir(wd), "ron.yaml")
+	ok(t, err)
+	expected := filepath.Join(filepath.Dir(wd), ConfigFileName)
 	found, err := findConfigFile()
 	ok(t, err)
 	equals(t, expected, found)
+}
+
+func Test_findConfigDirs(t *testing.T) {
+	wd, err := os.Getwd()
+	ok(t, err)
+	want := filepath.Join(wd, "testdata", ConfigDirName)
+
+	dirs, err := findConfigDirs(filepath.Join(wd, "testdata"))
+	ok(t, err)
+
+	found := false
+	for _, dir := range dirs {
+		if dir == want {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("wanted %s in dirs, got %+v", want, dirs)
+	}
+}
+
+func Test_findConfigDirFiles(t *testing.T) {
+	wd, err := os.Getwd()
+	ok(t, err)
+	want := []string{
+		filepath.Join(wd, "testdata/.ron/default.yaml"),
+		filepath.Join(wd, "testdata/.ron/empty.yaml"),
+		filepath.Join(wd, "testdata/.ron/ron.yaml"),
+	}
+
+	dirs := []string{filepath.Join(wd, "testdata/.ron")}
+	files, err := findConfigDirFiles(dirs)
+	ok(t, err)
+	sort.Strings(files)
+	equals(t, want, files)
 }
 
 func TestLoadConfigFiles(t *testing.T) {
@@ -40,19 +76,46 @@ func TestLoadConfigFiles(t *testing.T) {
 		expectedFound    string
 	}{
 		{
-			name:          "",
+			name:          "00 no override option finds parent ron.yaml",
 			expectedFound: d,
 			expectedConfigs: []*RawConfig{
-				mustLoadConfigFile(t, "default.yaml", true),
 				mustLoadConfigFile(t, "../ron.yaml", false),
+				mustLoadConfigFile(t, "../.ron/docker.yaml", true),
+				mustLoadConfigFile(t, "../.ron/go.yaml", true),
+				mustLoadConfigFile(t, "./default.yaml", true),
 			},
 		},
 		{
-			name:             "",
+			name:             "01 override option",
 			overrideYamlPath: "testdata/target_test.yaml",
 			expectedFound:    "",
 			expectedConfigs: []*RawConfig{
+				mustLoadConfigFile(t, "testdata/target_test.yaml", false),
+				mustLoadConfigFile(t, "../.ron/docker.yaml", true),
+				mustLoadConfigFile(t, "../.ron/go.yaml", true),
 				mustLoadConfigFile(t, "default.yaml", true),
+			},
+		},
+		{
+			name:            "02 default option",
+			defaultYamlPath: "testdata/target_test.yaml",
+			expectedFound:   d,
+			expectedConfigs: []*RawConfig{
+				mustLoadConfigFile(t, "../ron.yaml", false),
+				mustLoadConfigFile(t, "../.ron/docker.yaml", true),
+				mustLoadConfigFile(t, "../.ron/go.yaml", true),
+				mustLoadConfigFile(t, "testdata/target_test.yaml", false),
+			},
+		},
+		{
+			name:             "03 default and override options",
+			overrideYamlPath: "testdata/target_test.yaml",
+			defaultYamlPath:  "testdata/target_test.yaml",
+			expectedFound:    "",
+			expectedConfigs: []*RawConfig{
+				mustLoadConfigFile(t, "testdata/target_test.yaml", false),
+				mustLoadConfigFile(t, "../.ron/docker.yaml", true),
+				mustLoadConfigFile(t, "../.ron/go.yaml", true),
 				mustLoadConfigFile(t, "testdata/target_test.yaml", false),
 			},
 		},
@@ -61,36 +124,12 @@ func TestLoadConfigFiles(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			configs, found, err := LoadConfigFiles(tt.defaultYamlPath, tt.overrideYamlPath)
 			ok(t, err)
-			matched := true
-			if len(configs) != len(tt.expectedConfigs) {
-				matched = false
-			}
-			if !matched {
-				t.Fail()
-				t.Log("expected:\n")
-				for _, c := range tt.expectedConfigs {
-					t.Logf("- %+v\n", *c)
-				}
-				t.Log("got:\n")
-				for _, c := range configs {
-					t.Logf("- %+v\n", *c)
-				}
+			for i, config := range configs {
+				equals(t, strings.TrimSpace(tt.expectedConfigs[i].Envs), strings.TrimSpace(config.Envs))
+				equals(t, strings.TrimSpace(tt.expectedConfigs[i].Targets), strings.TrimSpace(config.Targets))
 			}
 			equals(t, tt.expectedFound, found)
 		})
-	}
-}
-
-func TestLoadDefaultAssetMissing(t *testing.T) {
-	defaultAssetFunc, _ := _bindata["target/default.yaml"]
-	defer func() {
-		_bindata["target/default.yaml"] = defaultAssetFunc
-	}()
-
-	delete(_bindata, "target/default.yaml")
-	err := LoadDefault()
-	if err == nil {
-		t.Fatal("expected missing config error")
 	}
 }
 

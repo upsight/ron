@@ -14,11 +14,12 @@ import (
 	template "github.com/upsight/ron/template"
 )
 
-var (
-	// DefaultTargets is what is in project root target/default.yaml if not specified.
-	DefaultTargets string
-	// DefaultEnvConfig is what is in project root target/default.yaml if not specified.
-	DefaultEnvConfig string
+const (
+	// ConfigDirName is the name of the folder where ron will look for yaml config
+	// files.
+	ConfigDirName = ".ron"
+	// ConfigFileName is the main ron config file that overrides other files.
+	ConfigFileName = "ron.yaml"
 )
 
 // ConfigFile is used to unmarshal configuration files.
@@ -76,13 +77,15 @@ func extractConfigError(path, input string, inErr error) error {
 	return err
 }
 
+// findConfigFile will search for a ron.yaml file, starting with the current directory
+// and then searching parent directories for a first occurrence.
 func findConfigFile() (string, error) {
 	dir, err := os.Getwd()
 	if err != nil {
 		return "", err
 	}
 	for {
-		fp := filepath.Join(dir, "ron.yaml")
+		fp := filepath.Join(dir, ConfigFileName)
 		if _, err := os.Stat(fp); err == nil {
 			return fp, nil
 		} else if !os.IsNotExist(err) {
@@ -96,8 +99,115 @@ func findConfigFile() (string, error) {
 	}
 }
 
-// LoadConfigFiles loads the default and override config files and returns
-// them as a slice. If defaultYamlPath is an empty string, the defaults
+// findConfigDirs will search in the current directory for a .ron folder
+// with *.yaml files, and then search parent directories.
+func findConfigDirs(curdir string) (dirs []string, err error) {
+	defer func() {
+		// append the users home directory before returning
+		hd := filepath.Join(homeDir(), ConfigDirName)
+		if _, err := os.Stat(hd); err == nil {
+			dirs = append(dirs, hd)
+		}
+	}()
+
+	for {
+		dirpath := filepath.Join(curdir, ConfigDirName)
+		if _, err = os.Stat(dirpath); err == nil {
+			dirs = append(dirs, dirpath)
+			return
+		}
+		parentDir := filepath.Dir(curdir)
+		if parentDir == curdir {
+			return
+		}
+		curdir = parentDir
+	}
+}
+
+// findConfigDirFiles will find any *.yaml files in a list of .ron directories.
+func findConfigDirFiles(dirs []string) (files []string, err error) {
+	for _, dir := range dirs {
+		found, err := filepath.Glob(filepath.Join(dir, "*.yaml"))
+		if err == nil {
+			files = append(files, found...)
+		}
+	}
+	return
+}
+
+// addRonDirConfigs will first find any .ron folders in the current
+// directory, followed by appending the home directory .ron folder.
+// Any errors here will abort adding conigs and just return.
+func addRonDirConfigs(wd string, configs *[]*RawConfig) {
+	dirs, err := findConfigDirs(wd)
+	if err != nil {
+		return
+	}
+	files, err := findConfigDirFiles(dirs)
+	if err != nil {
+		return
+	}
+	for _, file := range files {
+		conf, err := LoadConfigFile(file)
+		if err != nil {
+			continue
+		}
+		*configs = append(*configs, conf)
+	}
+}
+
+// addRonYamlFile will prepend the list of configs with
+// any ron.yaml files that are found along with returning its location.
+func addRonYamlFile(overrideYamlPath string, configs *[]*RawConfig) (string, error) {
+	var err error
+	foundConfigDir := ""
+	if overrideYamlPath == "" {
+		overrideYamlPath, err = findConfigFile()
+		if err != nil {
+			return "", err
+		}
+		foundConfigDir = filepath.Dir(overrideYamlPath)
+	}
+
+	if overrideYamlPath != "" {
+		overrideConfig, err := LoadConfigFile(overrideYamlPath)
+		if err != nil {
+			return "", err
+		}
+		overrideConfig.Filepath = overrideYamlPath
+		overrideConfig.Envs = strings.TrimSpace(overrideConfig.Envs)
+		overrideConfig.Targets = strings.TrimSpace(overrideConfig.Targets)
+		// prepend the override config
+		*configs = append([]*RawConfig{overrideConfig}, *configs...)
+	}
+
+	return foundConfigDir, err
+}
+
+// addDefaultYamlFile will add a default config which should always be
+// last in priority. If no path option is given a built in default will
+// be created.
+func addDefaultYamlFile(defaultYamlPath string, configs *[]*RawConfig) {
+	envs, targets, err := BuiltinDefault()
+	defaultConfig := &RawConfig{
+		Filepath: "builtin:target/default.yaml",
+		Envs:     envs,
+		Targets:  targets,
+	}
+	if defaultYamlPath != "" {
+		defaultConfig, err = LoadConfigFile(defaultYamlPath)
+		if err != nil {
+			return
+		}
+		defaultConfig.Filepath = defaultYamlPath
+	}
+	defaultConfig.Envs = strings.TrimSpace(defaultConfig.Envs)
+	defaultConfig.Targets = strings.TrimSpace(defaultConfig.Targets)
+	*configs = append(*configs, defaultConfig)
+}
+
+// LoadConfigFiles loads the default, override, and any directory config files
+// and returns them as a slice. If defaultYamlPath is an empty string, the defaults
 // compiled into ron will be used instead. If overrideYamlPath is blank,
 // it will find the nearest parent folder containing a ron.yaml file and use
 // that file instead. In that case, the path to that file will be returned
@@ -106,42 +216,13 @@ func findConfigFile() (string, error) {
 func LoadConfigFiles(defaultYamlPath, overrideYamlPath string) ([]*RawConfig, string, error) {
 	configs := []*RawConfig{}
 
-	var err error
-	defaultConfig := &RawConfig{
-		Filepath: "builtin:target/default.yaml",
-		Envs:     DefaultEnvConfig,
-		Targets:  DefaultTargets,
-	}
-	if defaultYamlPath != "" {
-		defaultConfig, err = LoadConfigFile(defaultYamlPath)
-		if err != nil {
-			return nil, "", err
-		}
-	}
-	defaultConfig.Envs = strings.TrimSpace(defaultConfig.Envs)
-	defaultConfig.Targets = strings.TrimSpace(defaultConfig.Targets)
-	configs = append(configs, defaultConfig)
+	foundConfigDir, err := addRonYamlFile(overrideYamlPath, &configs)
 
-	foundConfigDir := ""
-	if overrideYamlPath == "" {
-		overrideYamlPath, err = findConfigFile()
-		if err != nil {
-			return nil, "", err
-		}
-		foundConfigDir = filepath.Dir(overrideYamlPath)
+	wd, err := os.Getwd()
+	if err == nil {
+		addRonDirConfigs(wd, &configs)
 	}
-
-	if overrideYamlPath != "" {
-		overrideConfig, err := LoadConfigFile(overrideYamlPath)
-		if err != nil {
-			return nil, "", err
-		}
-		overrideConfig.Filepath = overrideYamlPath
-		overrideConfig.Envs = strings.TrimSpace(overrideConfig.Envs)
-		overrideConfig.Targets = strings.TrimSpace(overrideConfig.Targets)
-		configs = append(configs, overrideConfig)
-	}
-
+	addDefaultYamlFile(defaultYamlPath, &configs)
 	return configs, foundConfigDir, nil
 }
 
@@ -180,36 +261,36 @@ var LoadConfigFile = func(path string) (*RawConfig, error) {
 	return &RawConfig{Filepath: path, Envs: string(envs), Targets: string(targets)}, nil
 }
 
-// LoadDefault loads the binary yaml file envs and targets.
-var LoadDefault = func() error {
+// BuiltinDefault loads the binary yaml file and returns envs, targets, and any errors.
+func BuiltinDefault() (string, string, error) {
 	defaultYaml, err := Asset("target/default.yaml")
 	if err != nil {
-		return err
+		return "", "", err
 	}
 	content, err := template.RenderGo("builtin:target/default.yaml", string(defaultYaml))
 	if err != nil {
-		return err
+		return "", "", err
 	}
 
 	var c *ConfigFile
 	err = yaml.Unmarshal([]byte(content), &c)
 	if err != nil {
-		return err
+		return "", "", err
 	}
 
 	// load envs
 	d, err := yaml.Marshal(c.Envs)
 	if err != nil {
-		return err
+		return "", "", err
 	}
-	DefaultEnvConfig = string(d)
+	envs := string(d)
 
 	// load targets
 	d, err = yaml.Marshal(c.Targets)
 	if err != nil {
-		return err
+		return "", "", err
 	}
-	DefaultTargets = string(d)
+	targets := string(d)
 
-	return nil
+	return envs, targets, nil
 }

@@ -187,6 +187,14 @@ last.
 	$ ron target ron:prep
 	$ ron target prep
 
+ron will attempt to find any additional files in the following order:
+
+	1. A -yaml flag filepath config file
+	2. A local ./ron.yaml or in a parent directory
+	3. Any files in the folder ./.ron/*.yaml
+	4. Any ~/.ron/*yaml files
+	5. A -default configuration or any binary built in targets
+
 Template
 
 The template (template) will render a Go template file to the given output file.

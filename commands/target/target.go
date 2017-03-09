@@ -104,20 +104,8 @@ func (c *Command) Run(args []string) (int, error) {
 		// directory to that folder so Ron targets run from the expected place.
 		os.Chdir(foundConfigDir)
 	}
-	// Create env
-	envs, err := target.NewEnv(configs, target.ParseOSEnvs(os.Environ()), c.W)
-	if err != nil {
-		return 1, err
-	}
-	if listEnvs {
-		err := envs.List()
-		if err != nil {
-			return 1, err
-		}
-		return 0, nil
-	}
 	// Create targets
-	targetConfig, err := target.NewConfigs(envs, configs, c.W, c.WErr)
+	targetConfig, err := target.NewConfigs(configs, c.W, c.WErr)
 	if err != nil {
 		return 1, err
 	}
@@ -129,9 +117,16 @@ func (c *Command) Run(args []string) (int, error) {
 		targetConfig.ListClean()
 		return 0, nil
 	}
+	if listEnvs {
+		err := targetConfig.ListEnvs()
+		if err != nil {
+			return 1, err
+		}
+		return 0, nil
+	}
 
 	// Create make runner
-	m, err := target.NewMake(envs, targetConfig)
+	m, err := target.NewMake(targetConfig)
 	if err != nil {
 		return 1, err
 	}

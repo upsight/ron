@@ -1,0 +1,61 @@
+envs:
+  - APP: ron.yaml
+  - UNAME: plan9
+  - RON: was here
+  - CMD: +echo blah
+  - ENVS: >-
+      -e CMD=$CMD
+      -e TEST=$UNAME
+  - NOOP:
+targets:
+  echo:
+    cmd: |
+      echo ron.yaml
+  hello:
+    description: hello description
+    cmd: |
+      echo hello
+  goodbye:
+    description: goodbye description
+    cmd: |
+      echo goodbye
+  prep:
+    description: prep description
+    before:
+      - hello
+      - prep
+    after:
+      - goodbye
+      - prep
+    cmd: |
+      echo "prep1"
+      echo "prep2" && \
+        echo "prep3"
+      if [ 1 != 0 ]; then \
+        echo "prep4"
+      else \
+        echo "prepnope"; \
+      fi
+  uname:
+    cmd: |
+      echo $UNAME
+  shellExec:
+    cmd: |
+      echo $(echo test)
+  err:
+    cmd: |
+      me_garbage
+  prepBeforeErr:
+    before:
+      - err
+    after:
+      - goodbye
+    cmd: |
+      echo 1
+  prepAfterErr:
+    before:
+      - hello
+    after:
+      - err
+    cmd: |
+      echo 1

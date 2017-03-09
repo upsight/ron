@@ -16,6 +16,7 @@ import (
 // any before and after targets to run.
 type Target struct {
 	targetConfigs *Configs
+	File          *File     `json:"-" yaml:"-"`
 	Name          string    `json:"name" yaml:"name"`
 	Before        []string  `json:"before" yaml:"before"`
 	After         []string  `json:"after" yaml:"after"`
@@ -51,7 +52,7 @@ func (t *Target) Run() (int, string, error) {
 		}
 	}
 
-	cmd, err := execute.CommandNoWait(t.Cmd, t.W, t.WErr, t.targetConfigs.Env.Config)
+	cmd, err := execute.CommandNoWait(t.Cmd, t.W, t.WErr, t.targetConfigs.GetEnv(t.Name))
 	if err != nil {
 		return 1, "", err
 	}
