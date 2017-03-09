@@ -104,7 +104,11 @@ func (c *Command) Run(args []string) (int, error) {
 	}
 	var latestURL string
 	var ok bool
-	if latestURL, ok = envs.Config["LATEST_URL"]; !ok {
+	e, err := envs.Config()
+	if err != nil {
+		return 1, err
+	}
+	if latestURL, ok = e["LATEST_URL"]; !ok {
 		return 1, fmt.Errorf("LATEST_URL env key not set")
 	}
 

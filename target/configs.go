@@ -3,7 +3,6 @@ package target
 import (
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"sort"
@@ -145,12 +144,8 @@ func (tc *Configs) GetEnv(name string) MSS {
 		if filePrefix != "" && tf.Basename() != filePrefix {
 			continue
 		}
-		err := tf.Env.Process()
-		if err != nil {
-			log.Println(err)
-			return nil
-		}
-		return tf.Env.Config
+		envs, _ := tf.Env.Config()
+		return envs
 	}
 
 	return nil
@@ -159,13 +154,9 @@ func (tc *Configs) GetEnv(name string) MSS {
 // ListEnvs will print out the list of file envs.
 func (tc *Configs) ListEnvs() error {
 	for _, tf := range tc.Files {
-		basename := tf.Basename()
-		tc.StdOut.Write([]byte(color.Green(fmt.Sprintf("(%s) %s\n", basename, tf.Filepath))))
-		err := tf.Env.Process()
-		if err != nil {
-			return err
-		}
+		tc.StdOut.Write([]byte(color.Green(fmt.Sprintf("(%s) %s\n", tf.Basename(), tf.Filepath))))
 		tf.Env.List()
+		tc.StdOut.Write([]byte(color.Green("---\n\n")))
 	}
 
 	return nil

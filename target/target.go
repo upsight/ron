@@ -52,7 +52,11 @@ func (t *Target) Run() (int, string, error) {
 		}
 	}
 
-	cmd, err := execute.CommandNoWait(t.Cmd, t.W, t.WErr, t.targetConfigs.GetEnv(t.Name))
+	envs, err := t.File.Env.Config()
+	if err != nil {
+		return 1, "", err
+	}
+	cmd, err := execute.CommandNoWait(t.Cmd, t.W, t.WErr, envs)
 	if err != nil {
 		return 1, "", err
 	}
