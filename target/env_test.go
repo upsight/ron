@@ -54,24 +54,26 @@ func TestEnv_Process(t *testing.T) {
 	writer := &bytes.Buffer{}
 	e, err := NewEnv(&RawConfig{Envs: testNewEnvConfig}, ParseOSEnvs([]string{"APP=ron", "HELLO=hello", "ABC=+pwd"}), writer)
 	ok(t, err)
-	err = e.Process()
+	err = e.process()
+	ok(t, err)
+	c, err := e.Config()
 	ok(t, err)
 
-	got := e.Config["HELLO"]
+	got := c["HELLO"]
 	want := `hello`
 	if !strings.Contains(got, want) {
 		t.Fatalf("config does not contain %s got \n%s", want, got)
 	}
 
-	got = e.Config["UNAME"]
+	got = c["UNAME"]
 	want = `plan9`
 	equals(t, want, got)
 
-	got = e.Config["APP"]
+	got = c["APP"]
 	want = "ron"
 	if got != want {
 		for _, k := range e.keyOrder {
-			t.Log(k, e.Config[k])
+			t.Log(k, c[k])
 		}
 		equals(t, want, got)
 	}
@@ -81,10 +83,12 @@ func TestEnv_ProcessEnv(t *testing.T) {
 	writer := &bytes.Buffer{}
 	e, err := NewEnv(&RawConfig{Envs: testNewEnvConfig}, ParseOSEnvs([]string{}), writer)
 	ok(t, err)
-	err = e.Process()
+	err = e.process()
+	ok(t, err)
+	c, err := e.Config()
 	ok(t, err)
 
-	got := e.Config["ENVS"]
+	got := c["ENVS"]
 	want := `-e CMD=blah -e TEST=plan9`
 	if !strings.Contains(got, want) {
 		t.Fatalf("config ENVS does not contain %s got \n%s", want, got)
@@ -97,7 +101,7 @@ func TestEnv_ProcessBadCommand(t *testing.T) {
 	//ok(t, err)
 	e, err := NewEnv(&RawConfig{Envs: testNewEnvConfig + "\nHELLO=+hello"}, ParseOSEnvs([]string{}), writer)
 	ok(t, err)
-	err = e.Process()
+	err = e.process()
 	if err == nil {
 		t.Fatal("expected err processing command +hello")
 	}
@@ -106,7 +110,7 @@ func TestEnv_ProcessBadCommand(t *testing.T) {
 func TestEnv_ProcessBadYaml(t *testing.T) {
 	e, err := NewEnv(&RawConfig{Envs: `:"`}, MSS{}, nil)
 	ok(t, err)
-	err = e.Process()
+	err = e.process()
 	if err == nil {
 		t.Fatal("should have gotten invalid err")
 	}
@@ -115,7 +119,7 @@ func TestEnv_ProcessBadYaml(t *testing.T) {
 func TestEnv_ProcessBadYamlNewEnvs(t *testing.T) {
 	e, err := NewEnv(&RawConfig{Envs: `:"`}, MSS{}, nil)
 	ok(t, err)
-	err = e.Process()
+	err = e.process()
 	if err == nil {
 		t.Fatal("should have gotten invalid err")
 	}
@@ -127,7 +131,7 @@ func TestEnv_List(t *testing.T) {
 	ok(t, err)
 	e, err := NewEnv(&RawConfig{Envs: envs}, MSS{}, writer)
 	ok(t, err)
-	err = e.Process()
+	err = e.process()
 	ok(t, err)
 	e.List()
 	got := writer.String()

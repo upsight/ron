@@ -83,7 +83,7 @@ func targetDefaultYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "target/default.yaml", size: 425, mode: os.FileMode(420), modTime: time.Unix(1488322620, 0)}
+	info := bindataFileInfo{name: "target/default.yaml", size: 425, mode: os.FileMode(416), modTime: time.Unix(1488322620, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

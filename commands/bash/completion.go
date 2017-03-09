@@ -76,7 +76,6 @@ func (c *Command) Run(args []string) (int, error) {
 // a command can have a long form and short form.
 func (c *Command) Aliases() map[string]struct{} {
 	return map[string]struct{}{
-		"b":               struct{}{},
 		"bash_completion": struct{}{},
 	}
 }

@@ -1,7 +1,7 @@
 {{$path := "export PATH=$GOPATH/bin:$PATH"}}
 {{$list := "$(go list ./... | grep -v vendor/ | grep -v '_/go')"}}
 envs:
-  - APP: +echo ${PWD##*/}
+  - APP: go
   - ARCH: amd64
   - UNAME: +uname | tr '[:upper:]' '[:lower:]'
   - GO_VERSION: 1.8
