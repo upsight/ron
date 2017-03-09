@@ -5,13 +5,15 @@ import (
 	"strings"
 )
 
-// File is a mapping of the config file to its parsed targets.
+// File is a mapping of the config file to its parsed envs and targets.
 type File struct {
 	rawConfig *RawConfig
 	// Filepath is the path to the input file.
 	Filepath string
 	// Targets are the files targets.
 	Targets map[string]*Target
+	// Env are the files environment variables.
+	Env *Env
 }
 
 // Basename will return the Filepath name of file without the extension.

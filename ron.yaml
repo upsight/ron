@@ -12,6 +12,9 @@ envs:
   - REPO: github.com/upsight/ron
   - RELEASES: linux darwin windows
 targets:
+  echo:
+    cmd: |
+      echo $APP
   prep:
     description: Compile the default yaml asset to a go file.
     cmd: |

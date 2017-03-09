@@ -3,6 +3,7 @@ package target
 import (
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"sort"
@@ -14,14 +15,13 @@ import (
 // Configs is a mapping of filename to target file.
 type Configs struct {
 	Files  []*File
-	Env    *Env // the environment variables used for commands.
 	StdOut io.Writer
 	StdErr io.Writer
 }
 
 // NewConfigs takes a default set of yaml in config format and then
 // overrides them with a new set of config target replacements.
-func NewConfigs(env *Env, configs []*RawConfig, stdOut io.Writer, stdErr io.Writer) (*Configs, error) {
+func NewConfigs(configs []*RawConfig, stdOut io.Writer, stdErr io.Writer) (*Configs, error) {
 	if stdOut == nil {
 		stdOut = os.Stdout
 	}
@@ -31,10 +31,10 @@ func NewConfigs(env *Env, configs []*RawConfig, stdOut io.Writer, stdErr io.Writ
 
 	t := &Configs{
 		Files:  []*File{},
-		Env:    env,
 		StdOut: stdOut,
 		StdErr: stdErr,
 	}
+	osEnvs := ParseOSEnvs(os.Environ())
 	for _, config := range configs {
 		var targets map[string]*Target
 		if err := yaml.Unmarshal([]byte(config.Targets), &targets); err != nil {
@@ -55,6 +55,14 @@ func NewConfigs(env *Env, configs []*RawConfig, stdOut io.Writer, stdErr io.Writ
 			Filepath:  config.Filepath,
 			Targets:   targets,
 		}
+		for _, t := range targets {
+			t.File = f
+		}
+		e, err := NewEnv(config, osEnvs, stdOut)
+		if err != nil {
+			return nil, err
+		}
+		f.Env = e
 		t.Files = append(t.Files, f)
 	}
 	return t, nil
@@ -127,4 +135,38 @@ func (tc *Configs) Target(name string) (*Target, bool) {
 		}
 	}
 	return nil, false
+}
+
+// GetEnv will return the targets associated environment variables to
+// use when running the target.
+func (tc *Configs) GetEnv(name string) MSS {
+	filePrefix, _ := splitTarget(name)
+	for _, tf := range tc.Files {
+		if filePrefix != "" && tf.Basename() != filePrefix {
+			continue
+		}
+		err := tf.Env.Process()
+		if err != nil {
+			log.Println(err)
+			return nil
+		}
+		return tf.Env.Config
+	}
+
+	return nil
+}
+
+// ListEnvs will print out the list of file envs.
+func (tc *Configs) ListEnvs() error {
+	for _, tf := range tc.Files {
+		basename := tf.Basename()
+		tc.StdOut.Write([]byte(color.Green(fmt.Sprintf("(%s) %s\n", basename, tf.Filepath))))
+		err := tf.Env.Process()
+		if err != nil {
+			return err
+		}
+		tf.Env.List()
+	}
+
+	return nil
 }

@@ -93,6 +93,7 @@ func (c *Commander) List(writer io.Writer) {
 			names = append(names, k)
 		}
 	}
+	sort.Strings(names)
 	fmt.Fprintf(writer, strings.Join(names, " "))
 }
 

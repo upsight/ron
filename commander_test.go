@@ -47,7 +47,7 @@ func TestRonCommanderList(t *testing.T) {
 	stdErr := &bytes.Buffer{}
 	c := NewDefaultCommander(stdOut, stdErr)
 	c.List(stdOut)
-	want := "b bash_completion burgundy cmd httpstat hs replace t target template upgrade version"
+	want := "b bash_completion burgundy cmd hs httpstat replace t target template upgrade version"
 	if stdOut.String() != want {
 		t.Errorf("want %q, got %q", want, stdOut.String())
 	}

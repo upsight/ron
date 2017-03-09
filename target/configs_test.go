@@ -39,7 +39,7 @@ func createTestEnv(t *testing.T, writer *bytes.Buffer) (*Env, *bytes.Buffer) {
 	}
 	envs, _, err := BuiltinDefault()
 	ok(t, err)
-	e, err := NewEnv([]*RawConfig{&RawConfig{Envs: envs}}, MSS{"UNAME": "plan9"}, writer)
+	e, err := NewEnv(&RawConfig{Envs: envs}, MSS{"UNAME": "plan9"}, writer)
 	ok(t, err)
 	return e, writer
 }
@@ -61,8 +61,7 @@ func createTestConfigs(t *testing.T, stdOut *bytes.Buffer, stdErr *bytes.Buffer)
 		stdErr = &bytes.Buffer{}
 	}
 
-	testTargetEnv, _ := createTestEnv(t, nil)
-	tc, err := NewConfigs(testTargetEnv, []*RawConfig{
+	tc, err := NewConfigs([]*RawConfig{
 		&RawConfig{
 			Filepath: "testdata/default.yaml",
 			Envs:     defaultTargetConfigFile.EnvsString(),
@@ -147,10 +146,7 @@ func TestNewConfigsListClean(t *testing.T) {
 
 func TestNewConfigsBadDefault(t *testing.T) {
 	stdOut := &bytes.Buffer{}
-	testTargetEnv, _ := createTestEnv(t, nil)
-	_, err := NewConfigs(testTargetEnv, []*RawConfig{
-		&RawConfig{Targets: `:"`},
-	}, stdOut, nil)
+	_, err := NewConfigs([]*RawConfig{&RawConfig{Targets: `:"`}}, stdOut, nil)
 
 	if err == nil {
 		t.Fatal("expected err for invalid default config")
@@ -158,10 +154,7 @@ func TestNewConfigsBadDefault(t *testing.T) {
 }
 
 func TestNewConfigsBadNew(t *testing.T) {
-	testTargetEnv, _ := createTestEnv(t, nil)
-	_, err := NewConfigs(testTargetEnv, []*RawConfig{
-		&RawConfig{Targets: `:"`},
-	}, nil, nil)
+	_, err := NewConfigs([]*RawConfig{&RawConfig{Targets: `:"`}}, nil, nil)
 	if err == nil {
 		t.Fatal("expected err for invalid new config")
 	}
