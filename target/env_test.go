@@ -99,6 +99,33 @@ func TestEnv_processParentFile(t *testing.T) {
 	equals(t, want, got)
 }
 
+func TestEnv_processParentFileProcessEnv(t *testing.T) {
+	writer := &bytes.Buffer{}
+	parentEnv := `
+- APP: parent
+`
+	eParent, err := NewEnv(nil, &RawConfig{Envs: parentEnv}, ParseOSEnvs([]string{}), writer)
+	ok(t, err)
+	f := &File{Env: eParent}
+	childEnv := `
+- APP: bubba
+- SOMEVAR: abc/$APP
+`
+	e, err := NewEnv(f, &RawConfig{Envs: childEnv}, ParseOSEnvs([]string{}), writer)
+	ok(t, err)
+	err = e.process()
+	ok(t, err)
+	c, err := e.Config()
+	ok(t, err)
+
+	got := c["APP"]
+	want := `parent`
+	equals(t, want, got)
+	got = c["SOMEVAR"]
+	want = `abc/parent`
+	equals(t, want, got)
+}
+
 func TestEnv_ProcessEnv(t *testing.T) {
 	writer := &bytes.Buffer{}
 	e, err := NewEnv(nil, &RawConfig{Envs: testNewEnvConfig}, ParseOSEnvs([]string{}), writer)
