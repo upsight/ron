@@ -96,6 +96,12 @@ func (e *Env) process() error {
 	for _, env := range envs {
 		for k, v := range env {
 			e.config[k] = v
+			if e.parent != nil {
+				// use the parents env here if it exists
+				if eParent, ok := e.parent.Env.config[k]; ok {
+					e.config[k] = eParent
+				}
+			}
 			if !keyIn(k, e.keyOrder) {
 				e.keyOrder = append(e.keyOrder, k)
 			}
