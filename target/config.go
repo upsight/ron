@@ -10,6 +10,7 @@ import (
 
 	yaml "gopkg.in/yaml.v2"
 
+	"github.com/upsight/ron/color"
 	fi "github.com/upsight/ron/file"
 	template "github.com/upsight/ron/template"
 )
@@ -141,15 +142,18 @@ func findConfigDirFiles(dirs []string) (files []string, err error) {
 func addRonDirConfigs(wd string, configs *[]*RawConfig) {
 	dirs, err := findConfigDirs(wd)
 	if err != nil {
+		fmt.Println(color.Red(err.Error()))
 		return
 	}
 	files, err := findConfigDirFiles(dirs)
 	if err != nil {
+		fmt.Println(color.Red(err.Error()))
 		return
 	}
 	for _, file := range files {
 		conf, err := LoadConfigFile(file)
 		if err != nil {
+			fmt.Println(color.Red(err.Error()))
 			continue
 		}
 		*configs = append(*configs, conf)
@@ -164,6 +168,7 @@ func addRonYamlFile(overrideYamlPath string, configs *[]*RawConfig) (string, err
 	if overrideYamlPath == "" {
 		overrideYamlPath, err = findConfigFile()
 		if err != nil {
+			fmt.Println(color.Red(err.Error()))
 			return "", err
 		}
 		foundConfigDir = filepath.Dir(overrideYamlPath)
@@ -172,6 +177,7 @@ func addRonYamlFile(overrideYamlPath string, configs *[]*RawConfig) (string, err
 	if overrideYamlPath != "" {
 		overrideConfig, err := LoadConfigFile(overrideYamlPath)
 		if err != nil {
+			fmt.Println(color.Red(err.Error()))
 			return "", err
 		}
 		overrideConfig.Filepath = overrideYamlPath
@@ -197,6 +203,7 @@ func addDefaultYamlFile(defaultYamlPath string, configs *[]*RawConfig) {
 	if defaultYamlPath != "" {
 		defaultConfig, err = LoadConfigFile(defaultYamlPath)
 		if err != nil {
+			fmt.Println(color.Red(err.Error()))
 			return
 		}
 		defaultConfig.Filepath = defaultYamlPath
