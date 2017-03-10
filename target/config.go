@@ -102,7 +102,7 @@ func findConfigFile() (string, error) {
 
 // findConfigDirs will search in the current directory for a .ron folder
 // with *.yaml files, and then search parent directories.
-func findConfigDirs(curdir string) (dirs []string, err error) {
+func findConfigDirs(curdir string) (dirs []string) {
 	defer func() {
 		// append the users home directory before returning
 		hd := filepath.Join(homeDir(), ConfigDirName)
@@ -113,7 +113,7 @@ func findConfigDirs(curdir string) (dirs []string, err error) {
 
 	for {
 		dirpath := filepath.Join(curdir, ConfigDirName)
-		if _, err = os.Stat(dirpath); err == nil {
+		if _, err := os.Stat(dirpath); err == nil {
 			dirs = append(dirs, dirpath)
 			return
 		}
@@ -126,30 +126,23 @@ func findConfigDirs(curdir string) (dirs []string, err error) {
 }
 
 // findConfigDirFiles will find any *.yaml files in a list of .ron directories.
-func findConfigDirFiles(dirs []string) (files []string, err error) {
+func findConfigDirFiles(dirs []string) []string {
+	files := []string{}
 	for _, dir := range dirs {
 		found, err := filepath.Glob(filepath.Join(dir, "*.yaml"))
 		if err == nil {
 			files = append(files, found...)
 		}
 	}
-	return
+	return files
 }
 
 // addRonDirConfigs will first find any .ron folders in the current
 // directory, followed by appending the home directory .ron folder.
 // Any errors here will abort adding conigs and just return.
 func addRonDirConfigs(wd string, configs *[]*RawConfig) {
-	dirs, err := findConfigDirs(wd)
-	if err != nil {
-		fmt.Println(color.Red(err.Error()))
-		return
-	}
-	files, err := findConfigDirFiles(dirs)
-	if err != nil {
-		fmt.Println(color.Red(err.Error()))
-		return
-	}
+	dirs := findConfigDirs(wd)
+	files := findConfigDirFiles(dirs)
 	for _, file := range files {
 		conf, err := LoadConfigFile(file)
 		if err != nil {
@@ -168,7 +161,6 @@ func addRonYamlFile(overrideYamlPath string, configs *[]*RawConfig) (string, err
 	if overrideYamlPath == "" {
 		overrideYamlPath, err = findConfigFile()
 		if err != nil {
-			fmt.Println(color.Red(err.Error()))
 			return "", err
 		}
 		foundConfigDir = filepath.Dir(overrideYamlPath)

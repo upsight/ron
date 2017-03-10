@@ -33,8 +33,7 @@ func Test_findConfigDirs(t *testing.T) {
 	ok(t, err)
 	want := filepath.Join(wd, "testdata", ConfigDirName)
 
-	dirs, err := findConfigDirs(filepath.Join(wd, "testdata"))
-	ok(t, err)
+	dirs := findConfigDirs(filepath.Join(wd, "testdata"))
 
 	found := false
 	for _, dir := range dirs {
@@ -58,8 +57,7 @@ func Test_findConfigDirFiles(t *testing.T) {
 	}
 
 	dirs := []string{filepath.Join(wd, "testdata/.ron")}
-	files, err := findConfigDirFiles(dirs)
-	ok(t, err)
+	files := findConfigDirFiles(dirs)
 	sort.Strings(files)
 	equals(t, want, files)
 }
