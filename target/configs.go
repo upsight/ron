@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/upsight/ron/color"
 	yaml "gopkg.in/yaml.v2"
@@ -34,6 +35,8 @@ func NewConfigs(configs []*RawConfig, stdOut io.Writer, stdErr io.Writer) (*Conf
 		StdErr: stdErr,
 	}
 	osEnvs := ParseOSEnvs(os.Environ())
+	// parentFile here is the highest priority ron.yaml file.
+	var parentFile *File
 	for _, config := range configs {
 		var targets map[string]*Target
 		if err := yaml.Unmarshal([]byte(config.Targets), &targets); err != nil {
@@ -57,12 +60,15 @@ func NewConfigs(configs []*RawConfig, stdOut io.Writer, stdErr io.Writer) (*Conf
 		for _, t := range targets {
 			t.File = f
 		}
-		e, err := NewEnv(config, osEnvs, stdOut)
+		e, err := NewEnv(parentFile, config, osEnvs, stdOut)
 		if err != nil {
 			return nil, err
 		}
 		f.Env = e
 		t.Files = append(t.Files, f)
+		if strings.HasSuffix(config.Filepath, ConfigFileName) {
+			parentFile = f
+		}
 	}
 	return t, nil
 }

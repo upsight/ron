@@ -98,7 +98,7 @@ func (c *Command) Run(args []string) (int, error) {
 	if err != nil {
 		return 1, err
 	}
-	envs, err := target.NewEnv(&target.RawConfig{Envs: envsConfig}, target.ParseOSEnvs(os.Environ()), c.W)
+	envs, err := target.NewEnv(nil, &target.RawConfig{Envs: envsConfig}, target.ParseOSEnvs(os.Environ()), c.W)
 	if err != nil {
 		return 1, err
 	}

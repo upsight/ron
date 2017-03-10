@@ -26,13 +26,13 @@ func TestEnv_NewEnv(t *testing.T) {
 	writer := &bytes.Buffer{}
 	envs, _, err := BuiltinDefault()
 	ok(t, err)
-	NewEnv(&RawConfig{Envs: envs}, MSS{}, writer)
+	NewEnv(nil, &RawConfig{Envs: envs}, MSS{}, writer)
 }
 
 func TestEnv_NewEnvStdout(t *testing.T) {
 	envs, _, err := BuiltinDefault()
 	ok(t, err)
-	NewEnv(&RawConfig{Envs: envs}, MSS{}, nil)
+	NewEnv(nil, &RawConfig{Envs: envs}, MSS{}, nil)
 }
 
 func TestEnv_ParseOSEnvs(t *testing.T) {
@@ -50,9 +50,9 @@ func TestEnv_ParseOSEnvs(t *testing.T) {
 	}
 }
 
-func TestEnv_Process(t *testing.T) {
+func TestEnv_process(t *testing.T) {
 	writer := &bytes.Buffer{}
-	e, err := NewEnv(&RawConfig{Envs: testNewEnvConfig}, ParseOSEnvs([]string{"APP=ron", "HELLO=hello", "ABC=+pwd"}), writer)
+	e, err := NewEnv(nil, &RawConfig{Envs: testNewEnvConfig}, ParseOSEnvs([]string{"APP=ron", "HELLO=hello", "ABC=+pwd"}), writer)
 	ok(t, err)
 	err = e.process()
 	ok(t, err)
@@ -79,9 +79,29 @@ func TestEnv_Process(t *testing.T) {
 	}
 }
 
+func TestEnv_processParentFile(t *testing.T) {
+	writer := &bytes.Buffer{}
+	eParent, err := NewEnv(nil, &RawConfig{Envs: ""}, ParseOSEnvs([]string{"APP=don", "HELLO=goodbye", "ABC=+pwd"}), writer)
+	ok(t, err)
+	f := &File{Env: eParent}
+	e, err := NewEnv(f, &RawConfig{Envs: ""}, ParseOSEnvs([]string{"APP=ron", "HELLO=hello", "ABC=+pwd"}), writer)
+	ok(t, err)
+	err = e.process()
+	ok(t, err)
+	c, err := e.Config()
+	ok(t, err)
+
+	got := c["APP"]
+	want := `don`
+	equals(t, want, got)
+	got = c["HELLO"]
+	want = `goodbye`
+	equals(t, want, got)
+}
+
 func TestEnv_ProcessEnv(t *testing.T) {
 	writer := &bytes.Buffer{}
-	e, err := NewEnv(&RawConfig{Envs: testNewEnvConfig}, ParseOSEnvs([]string{}), writer)
+	e, err := NewEnv(nil, &RawConfig{Envs: testNewEnvConfig}, ParseOSEnvs([]string{}), writer)
 	ok(t, err)
 	err = e.process()
 	ok(t, err)
@@ -99,7 +119,7 @@ func TestEnv_ProcessBadCommand(t *testing.T) {
 	writer := &bytes.Buffer{}
 	//envs, _, err := BuiltinDefault()
 	//ok(t, err)
-	e, err := NewEnv(&RawConfig{Envs: testNewEnvConfig + "\nHELLO=+hello"}, ParseOSEnvs([]string{}), writer)
+	e, err := NewEnv(nil, &RawConfig{Envs: testNewEnvConfig + "\nHELLO=+hello"}, ParseOSEnvs([]string{}), writer)
 	ok(t, err)
 	err = e.process()
 	if err == nil {
@@ -108,7 +128,7 @@ func TestEnv_ProcessBadCommand(t *testing.T) {
 }
 
 func TestEnv_ProcessBadYaml(t *testing.T) {
-	e, err := NewEnv(&RawConfig{Envs: `:"`}, MSS{}, nil)
+	e, err := NewEnv(nil, &RawConfig{Envs: `:"`}, MSS{}, nil)
 	ok(t, err)
 	err = e.process()
 	if err == nil {
@@ -117,7 +137,7 @@ func TestEnv_ProcessBadYaml(t *testing.T) {
 }
 
 func TestEnv_ProcessBadYamlNewEnvs(t *testing.T) {
-	e, err := NewEnv(&RawConfig{Envs: `:"`}, MSS{}, nil)
+	e, err := NewEnv(nil, &RawConfig{Envs: `:"`}, MSS{}, nil)
 	ok(t, err)
 	err = e.process()
 	if err == nil {
@@ -129,7 +149,7 @@ func TestEnv_List(t *testing.T) {
 	writer := &bytes.Buffer{}
 	envs, _, err := BuiltinDefault()
 	ok(t, err)
-	e, err := NewEnv(&RawConfig{Envs: envs}, MSS{}, writer)
+	e, err := NewEnv(nil, &RawConfig{Envs: envs}, MSS{}, writer)
 	ok(t, err)
 	err = e.process()
 	ok(t, err)
@@ -144,7 +164,7 @@ func TestEnv_List(t *testing.T) {
 func TestEnv_ListBadWriter(t *testing.T) {
 	envs, _, err := BuiltinDefault()
 	ok(t, err)
-	e, _ := NewEnv(&RawConfig{Envs: envs}, MSS{}, badWriter{})
+	e, _ := NewEnv(nil, &RawConfig{Envs: envs}, MSS{}, badWriter{})
 	e.List()
 }
 
@@ -152,7 +172,7 @@ func TestEnv_PrintRaw(t *testing.T) {
 	writer := &bytes.Buffer{}
 	envs, _, err := BuiltinDefault()
 	ok(t, err)
-	e, _ := NewEnv(&RawConfig{Envs: envs}, MSS{}, writer)
+	e, _ := NewEnv(nil, &RawConfig{Envs: envs}, MSS{}, writer)
 	err = e.PrintRaw()
 	ok(t, err)
 	want := envs + "\n"
@@ -163,7 +183,7 @@ func TestEnv_PrintRaw(t *testing.T) {
 func TestEnv_PrintRawBadWriter(t *testing.T) {
 	envs, _, err := BuiltinDefault()
 	ok(t, err)
-	e, err := NewEnv(&RawConfig{Envs: envs}, MSS{}, badWriter{})
+	e, err := NewEnv(nil, &RawConfig{Envs: envs}, MSS{}, badWriter{})
 	ok(t, err)
 	e.PrintRaw()
 }
