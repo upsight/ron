@@ -28,6 +28,7 @@ type Env struct {
 	config    MSS       // the key value of expanded variables
 	keyOrder  []string  // the env keys order of preference
 	rawConfig *RawConfig
+	parent    *File
 }
 
 // ParseOSEnvs takes a list of "key=val" and splits them
@@ -44,7 +45,7 @@ func ParseOSEnvs(osEnvs []string) MSS {
 // NewEnv create a new environment variable parser similar
 // to make variables. In order to populate the Config envs, the func Process
 // must be run after initialization.
-func NewEnv(config *RawConfig, osEnvs MSS, writer io.Writer) (*Env, error) {
+func NewEnv(parentFile *File, config *RawConfig, osEnvs MSS, writer io.Writer) (*Env, error) {
 	if writer == nil {
 		writer = os.Stdout
 	}
@@ -55,6 +56,7 @@ func NewEnv(config *RawConfig, osEnvs MSS, writer io.Writer) (*Env, error) {
 		config:    MSS{},
 		keyOrder:  []string{},
 		rawConfig: config,
+		parent:    parentFile,
 	}
 	return e, nil
 }
@@ -80,6 +82,12 @@ func (e *Env) process() error {
 	if len(e.config) > 0 {
 		// already processed
 		return nil
+	}
+	if e.parent != nil {
+		err := e.parent.Env.process()
+		if err != nil {
+			return err
+		}
 	}
 	var envs []MSS
 	if err := yaml.Unmarshal([]byte(e.rawConfig.Envs), &envs); err != nil {
@@ -109,6 +117,12 @@ func (e *Env) process() error {
 			e.config[k] = out
 		}
 		e.config[k] = os.Expand(e.config[k], e.Getenv)
+	}
+	if e.parent != nil {
+		// set the parent envs here as final values.
+		for k, v := range e.parent.Env.config {
+			e.config[k] = v
+		}
 	}
 	return nil
 }
