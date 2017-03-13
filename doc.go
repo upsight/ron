@@ -148,13 +148,33 @@ target name seperated by colon.
 	  -yaml string
 	    	Path to override yaml file, can be local or http.
 
-		ron contains a default set of envs and targets that can be inspected with the
+		ron contains a default set of remotes, envs and targets that can be inspected with the
 		flag options listed above. Those can also be overidden with another yaml file.
-		If no -default or -yaml is provided and in the current working directory there
+		If no -default or -yaml is provided and in the current or parent working directory there
 		exists a ron.yaml, then those will be used as the -yaml option.
 
-		The yaml config should contain a list of "envs" and a
-		hash of "targets".
+		The yaml config should contain a list of "remotes" (optional), "envs", and a hash of "targets".
+
+		remotes should be defined as a map with any environment name and a list of server values. It's only
+		necessary to define them once so they could be globally set for example in ~/.ron/remotes.yaml
+
+			remotes:
+				staging:
+					-
+						host: example1.com
+						port: 22
+						user: test
+					-
+						host: example2.com
+						port: 22
+						user: test
+				some_other_env:
+					-
+						host: exampleprod.com
+						port: 22
+						user: test
+
+		The yaml config should contain a list of "remotes", "envs" and a hash of "targets".
 
 		env values prefixed with a +(subject to change) will be executed and set to the os environment
 		prior to target execution.

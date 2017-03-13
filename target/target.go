@@ -82,6 +82,18 @@ func (t *Target) Run() (int, string, error) {
 	return 0, "", nil
 }
 
+// RunRemote executes the target on a remote host. It ignores any
+// before and after targets.
+func (t *Target) RunRemote(conf *RemoteHost) (int, string, error) {
+	s, err := execute.NewSSH(conf.User, conf.Host, conf.Port, os.Stdin, t.W, t.WErr)
+	if err != nil {
+		return 1, "", err
+	}
+
+	err = s.RunCommand(t.Cmd, nil)
+	return 0, "", err
+}
+
 // List displays the defined before, after, description and cmd of the target.
 func (t *Target) List(verbose bool, nameWidth int) {
 	if !verbose {

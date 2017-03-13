@@ -5,3 +5,4 @@ import:
   subpackages:
   - http2
 - package: gopkg.in/yaml.v2
+- package: golang.org/x/crypto/ssh/agent

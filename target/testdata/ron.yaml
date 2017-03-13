@@ -1,3 +1,18 @@
+remotes:
+  staging:
+    -
+      host: example1.com
+      port: 22
+      user: test
+    -
+      host: example2.com
+      port: 22
+      user: test
+  production:
+    -
+      host: exampleprod.com
+      port: 22
+      user: test
 envs:
   - APP: ron.yaml
   - UNAME: plan9

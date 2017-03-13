@@ -26,6 +26,7 @@ const (
 // ConfigFile is used to unmarshal configuration files.
 type ConfigFile struct {
 	Envs    []map[string]string `json:"envs" yaml:"envs"`
+	Remotes *Remotes            `json:"remotes" yaml:"remotes"`
 	Targets map[string]struct {
 		Before      []string `json:"before" yaml:"before"`
 		After       []string `json:"after" yaml:"after"`
@@ -46,10 +47,17 @@ func (c *ConfigFile) TargetsString() string {
 	return string(targets)
 }
 
+// RemotesString is used for debugging the loaded remotes.
+func (c *ConfigFile) RemotesString() string {
+	remotes, _ := yaml.Marshal(c.Remotes)
+	return string(remotes)
+}
+
 // RawConfig contains the raw strings from a loaded config file.
 type RawConfig struct {
 	Filepath string
 	Envs     string
+	Remotes  string
 	Targets  string
 }
 
@@ -155,28 +163,29 @@ func addRonDirConfigs(wd string, configs *[]*RawConfig) {
 
 // addRonYamlFile will prepend the list of configs with
 // any ron.yaml files that are found along with returning its location.
-func addRonYamlFile(overrideYamlPath string, configs *[]*RawConfig) (string, error) {
+func addRonYamlFile(oYamlPath string, configs *[]*RawConfig) (string, error) {
 	var err error
 	foundConfigDir := ""
-	if overrideYamlPath == "" {
-		overrideYamlPath, err = findConfigFile()
+	if oYamlPath == "" {
+		oYamlPath, err = findConfigFile()
 		if err != nil {
 			return "", err
 		}
-		foundConfigDir = filepath.Dir(overrideYamlPath)
+		foundConfigDir = filepath.Dir(oYamlPath)
 	}
 
-	if overrideYamlPath != "" {
-		overrideConfig, err := LoadConfigFile(overrideYamlPath)
+	if oYamlPath != "" {
+		oConfig, err := LoadConfigFile(oYamlPath)
 		if err != nil {
 			fmt.Println(color.Red(err.Error()))
 			return "", err
 		}
-		overrideConfig.Filepath = overrideYamlPath
-		overrideConfig.Envs = strings.TrimSpace(overrideConfig.Envs)
-		overrideConfig.Targets = strings.TrimSpace(overrideConfig.Targets)
+		oConfig.Filepath = oYamlPath
+		oConfig.Envs = strings.TrimSpace(oConfig.Envs)
+		oConfig.Remotes = strings.TrimSpace(oConfig.Remotes)
+		oConfig.Targets = strings.TrimSpace(oConfig.Targets)
 		// prepend the override config
-		*configs = append([]*RawConfig{overrideConfig}, *configs...)
+		*configs = append([]*RawConfig{oConfig}, *configs...)
 	}
 
 	return foundConfigDir, err
@@ -185,24 +194,25 @@ func addRonYamlFile(overrideYamlPath string, configs *[]*RawConfig) (string, err
 // addDefaultYamlFile will add a default config which should always be
 // last in priority. If no path option is given a built in default will
 // be created.
-func addDefaultYamlFile(defaultYamlPath string, configs *[]*RawConfig) {
+func addDefaultYamlFile(dYamlPath string, configs *[]*RawConfig) {
 	envs, targets, err := BuiltinDefault()
-	defaultConfig := &RawConfig{
+	dConfig := &RawConfig{
 		Filepath: "builtin:target/default.yaml",
 		Envs:     envs,
 		Targets:  targets,
 	}
-	if defaultYamlPath != "" {
-		defaultConfig, err = LoadConfigFile(defaultYamlPath)
+	if dYamlPath != "" {
+		dConfig, err = LoadConfigFile(dYamlPath)
 		if err != nil {
 			fmt.Println(color.Red(err.Error()))
 			return
 		}
-		defaultConfig.Filepath = defaultYamlPath
+		dConfig.Filepath = dYamlPath
 	}
-	defaultConfig.Envs = strings.TrimSpace(defaultConfig.Envs)
-	defaultConfig.Targets = strings.TrimSpace(defaultConfig.Targets)
-	*configs = append(*configs, defaultConfig)
+	dConfig.Envs = strings.TrimSpace(dConfig.Envs)
+	dConfig.Remotes = strings.TrimSpace(dConfig.Remotes)
+	dConfig.Targets = strings.TrimSpace(dConfig.Targets)
+	*configs = append(*configs, dConfig)
 }
 
 // LoadConfigFiles loads the default, override, and any directory config files
@@ -253,11 +263,20 @@ var LoadConfigFile = func(path string) (*RawConfig, error) {
 	if err != nil {
 		return nil, err
 	}
+	remotes, err := yaml.Marshal(c.Remotes)
+	if err != nil {
+		return nil, err
+	}
 	targets, err := yaml.Marshal(c.Targets)
 	if err != nil {
 		return nil, err
 	}
-	return &RawConfig{Filepath: path, Envs: string(envs), Targets: string(targets)}, nil
+	return &RawConfig{
+		Envs:     string(envs),
+		Filepath: path,
+		Remotes:  string(remotes),
+		Targets:  string(targets),
+	}, nil
 }
 
 // BuiltinDefault loads the binary yaml file and returns envs, targets, and any errors.

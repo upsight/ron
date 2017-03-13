@@ -16,26 +16,26 @@ _ron()
 
     case ${COMP_CWORD} in
         1)
-						local cmds=$(ron -list)
+            local cmds=$(ron -list)
             COMPREPLY=($(compgen -W "${cmds}" -- ${cur}))
             ;;
         *)
             case ${sub_cmd} in
                 cmd)
-										local command_opts="-loglevel -restart -wait -watch"
+                    local command_opts="-loglevel -restart -wait -watch"
                     COMPREPLY=($(compgen -W "${replace_opts}" -- ${cur}))
                     ;;
                 replace)
-										local replace_opts="-debug -input -output"
+                    local replace_opts="-debug -input -output"
                     COMPREPLY=($(compgen -W "${command_opts}" -- ${cur}))
                     ;;
                 t | target)
-										local target_opts="-debug -default -envs -list -verbose -yaml"
-										local target_list_opts=$(ron t -list_clean)
+                    local target_opts="-debug -default -envs -list -list_remotes -remotes -verbose -yaml"
+                    local target_list_opts=$(ron t -list_clean)
                     COMPREPLY=($(compgen -W "${target_opts} ${target_list_opts}" -- ${cur}))
                     ;;
                 template)
-										local template_opts="-debug -input -output"
+                    local template_opts="-debug -input -output"
                     COMPREPLY=($(compgen -W "${template_opts}" -- ${cur}))
                     ;;
             esac

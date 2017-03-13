@@ -2,7 +2,12 @@
 // and OS environment variables.
 package target
 
-import "fmt"
+import (
+	"fmt"
+	"sync"
+
+	"github.com/upsight/ron/color"
+)
 
 // MSS is an alias for map[string]string
 type MSS map[string]string
@@ -27,9 +32,26 @@ func (m *Make) Run(names ...string) error {
 		if !ok {
 			return fmt.Errorf("%s target not found", name)
 		}
-		status, out, err := target.Run()
-		if status != 0 || err != nil {
-			return fmt.Errorf("%d %s %s", status, out, err)
+		if len(m.Configs.RemoteHosts) > 0 {
+			wg := &sync.WaitGroup{}
+			for _, h := range m.Configs.RemoteHosts {
+				wg.Add(1)
+				go func(host *RemoteHost) {
+					defer wg.Done()
+					status, out, err := target.RunRemote(host)
+					if status != 0 || err != nil {
+						msg := fmt.Sprintf("%s] %d %s %v\n", host.Host, status, out, err)
+						m.Configs.StdErr.Write([]byte(color.Red(msg)))
+						return
+					}
+				}(h)
+			}
+			wg.Wait()
+		} else {
+			status, out, err := target.Run()
+			if status != 0 || err != nil {
+				return fmt.Errorf("%d %s %v", status, out, err)
+			}
 		}
 	}
 	return nil

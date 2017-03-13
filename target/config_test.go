@@ -131,6 +131,24 @@ func TestLoadConfigFiles(t *testing.T) {
 	}
 }
 
+func TestLoadConfigFileWithRemotes(t *testing.T) {
+	c, err := LoadConfigFile(path.Join(wrkdir, "testdata", "ron.yaml"))
+	ok(t, err)
+	want := `production:
+- host: exampleprod.com
+  port: 22
+  user: test
+staging:
+- host: example1.com
+  port: 22
+  user: test
+- host: example2.com
+  port: 22
+  user: test
+`
+	equals(t, want, c.Remotes)
+}
+
 func TestLoadConfigFile(t *testing.T) {
 	_, err := LoadConfigFile(path.Join(wrkdir, "testdata", "target_test.yaml"))
 	ok(t, err)
