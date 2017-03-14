@@ -9,19 +9,22 @@ import (
 	"strings"
 
 	"github.com/upsight/ron/color"
+	"github.com/upsight/ron/execute"
 	yaml "gopkg.in/yaml.v2"
 )
 
 // Configs is a mapping of filename to target file.
 type Configs struct {
-	Files  []*File
-	StdOut io.Writer
-	StdErr io.Writer
+	RemoteEnv   string               // The remote hosts to run the command on. This is (file):env
+	RemoteHosts []*execute.SSHConfig // a list of remote hosts to execute on.
+	Files       []*File
+	StdOut      io.Writer
+	StdErr      io.Writer
 }
 
 // NewConfigs takes a default set of yaml in config format and then
 // overrides them with a new set of config target replacements.
-func NewConfigs(configs []*RawConfig, stdOut io.Writer, stdErr io.Writer) (*Configs, error) {
+func NewConfigs(configs []*RawConfig, remoteEnv string, stdOut io.Writer, stdErr io.Writer) (*Configs, error) {
 	if stdOut == nil {
 		stdOut = os.Stdout
 	}
@@ -29,10 +32,11 @@ func NewConfigs(configs []*RawConfig, stdOut io.Writer, stdErr io.Writer) (*Conf
 		stdErr = os.Stderr
 	}
 
-	t := &Configs{
-		Files:  []*File{},
-		StdOut: stdOut,
-		StdErr: stdErr,
+	confs := &Configs{
+		RemoteEnv: remoteEnv,
+		Files:     []*File{},
+		StdOut:    stdOut,
+		StdErr:    stdErr,
 	}
 	osEnvs := ParseOSEnvs(os.Environ())
 	// parentFile here is the highest priority ron.yaml file.
@@ -42,6 +46,10 @@ func NewConfigs(configs []*RawConfig, stdOut io.Writer, stdErr io.Writer) (*Conf
 		if err := yaml.Unmarshal([]byte(config.Targets), &targets); err != nil {
 			return nil, err
 		}
+		var remotes Remotes
+		if err := yaml.Unmarshal([]byte(config.Remotes), &remotes); err != nil {
+			return nil, err
+		}
 		// initialize io for each target.
 		for name, target := range targets {
 			target.W = stdOut
@@ -49,13 +57,14 @@ func NewConfigs(configs []*RawConfig, stdOut io.Writer, stdErr io.Writer) (*Conf
 			if target.Name == "" {
 				target.Name = name
 			}
-			target.targetConfigs = t
+			target.targetConfigs = confs
 		}
 
 		f := &File{
 			rawConfig: config,
 			Filepath:  config.Filepath,
 			Targets:   targets,
+			Remotes:   remotes,
 		}
 		for _, t := range targets {
 			t.File = f
@@ -65,12 +74,26 @@ func NewConfigs(configs []*RawConfig, stdOut io.Writer, stdErr io.Writer) (*Conf
 			return nil, err
 		}
 		f.Env = e
-		t.Files = append(t.Files, f)
+		confs.Files = append(confs.Files, f)
 		if strings.HasSuffix(config.Filepath, ConfigFileName) {
 			parentFile = f
 		}
 	}
-	return t, nil
+
+	if remoteEnv != "" {
+		// find any remote hosts if set.
+		filePrefix, env := splitTarget(remoteEnv)
+		for _, tf := range confs.Files {
+			if filePrefix != "" && tf.Basename() != filePrefix {
+				continue
+			}
+			if r, ok := tf.Remotes[env]; ok {
+				confs.RemoteHosts = r
+				break
+			}
+		}
+	}
+	return confs, nil
 }
 
 // List prints out each target and its before and after targets.
@@ -153,7 +176,6 @@ func (tc *Configs) GetEnv(name string) MSS {
 		envs, _ := tf.Env.Config()
 		return envs
 	}
-
 	return nil
 }
 
@@ -164,6 +186,17 @@ func (tc *Configs) ListEnvs() error {
 		tf.Env.List()
 		tc.StdOut.Write([]byte(color.Green("---\n\n")))
 	}
+	return nil
+}
 
+// ListRemotes will print out the list of remote envs set in each file.
+func (tc *Configs) ListRemotes() error {
+	for _, tf := range tc.Files {
+		tc.StdOut.Write([]byte(color.Green(fmt.Sprintf("(%s) %s\n", tf.Basename(), tf.Filepath))))
+		if err := tf.Remotes.List(tc.StdOut); err != nil {
+			tc.StdErr.Write([]byte(color.Red(err.Error())))
+		}
+		tc.StdOut.Write([]byte(color.Green("---\n\n")))
+	}
 	return nil
 }

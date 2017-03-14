@@ -1,5 +1,15 @@
 {{$path := "export PATH=$GOPATH/bin:$PATH"}}
 {{$list := "$(go list ./... | grep -v vendor/ | grep -v '_/go')"}}
+remotes:
+  staging:
+    -
+      host: example2.com
+      port: 22
+      user: test
+      proxy_host:
+      proxy_port:
+      proxy_user:
+      identity_file:
 envs:
   - APP: ron
   - APP_UNDERSCORE: +echo $APP | tr "-" "_"
@@ -14,7 +24,7 @@ envs:
 targets:
   echo:
     cmd: |
-      echo $APP
+      echo $APP $HOME
   prep:
     description: Compile the default yaml asset to a go file.
     cmd: |

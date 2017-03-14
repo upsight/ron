@@ -14,6 +14,8 @@ type File struct {
 	Targets map[string]*Target
 	// Env are the files environment variables.
 	Env *Env
+	// Remotes is a mapping of environment to remote hosts.
+	Remotes Remotes
 }
 
 // Basename will return the Filepath name of file without the extension.

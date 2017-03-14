@@ -72,7 +72,7 @@ func createTestConfigs(t *testing.T, stdOut *bytes.Buffer, stdErr *bytes.Buffer)
 			Envs:     ronTargetConfigFile.EnvsString(),
 			Targets:  ronTargetConfigFile.TargetsString(),
 		},
-	}, stdOut, stdErr)
+	}, "", stdOut, stdErr)
 	ok(t, err)
 	return tc, stdOut, stdErr
 }
@@ -146,7 +146,7 @@ func TestNewConfigsListClean(t *testing.T) {
 
 func TestNewConfigsBadDefault(t *testing.T) {
 	stdOut := &bytes.Buffer{}
-	_, err := NewConfigs([]*RawConfig{&RawConfig{Targets: `:"`}}, stdOut, nil)
+	_, err := NewConfigs([]*RawConfig{&RawConfig{Targets: `:"`}}, "", stdOut, nil)
 
 	if err == nil {
 		t.Fatal("expected err for invalid default config")
@@ -154,7 +154,7 @@ func TestNewConfigsBadDefault(t *testing.T) {
 }
 
 func TestNewConfigsBadNew(t *testing.T) {
-	_, err := NewConfigs([]*RawConfig{&RawConfig{Targets: `:"`}}, nil, nil)
+	_, err := NewConfigs([]*RawConfig{&RawConfig{Targets: `:"`}}, "", nil, nil)
 	if err == nil {
 		t.Fatal("expected err for invalid new config")
 	}

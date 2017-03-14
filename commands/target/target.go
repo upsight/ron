@@ -42,8 +42,34 @@ func (c *Command) Run(args []string) (int, error) {
 	If no -default or -yaml is provided and in the current or parent working directory there
 	exists a ron.yaml, then those will be used as the -yaml option.
 
-	The yaml config should contain a list of "envs" and a
-	hash of "targets".
+	The yaml config should contain "remotes" (optional), "envs", and a hash of "targets".
+
+	remotes should be defined as a map with any environment name and a list of server values. It's only
+	necessary to define them once so they could be globally set for example in ~/.ron/remotes.yaml
+	You can then reference it with -remote=remotes:some_other_env
+
+		remotes:
+			staging:
+				-
+					host: example1.com
+					port: 22
+					user: test
+				-
+					host: example2.com
+					port: 22
+					user: test
+			some_other_env:
+				-
+					host: exampleprod.com
+					port: 22
+					user: test
+					proxy_host: bastionserver.com
+					proxy_port: 22
+					proxy_user: bastion_user
+					identity_file: /optional/path/to/identityfile
+
+	If no identity file is provided, the users local ssh agent will be attempted. You can add
+	keys with ssh-add.
 
 	env values prefixed with a +(subject to change) will be executed and set to the os environment
 	prior to target execution.
@@ -70,12 +96,16 @@ func (c *Command) Run(args []string) (int, error) {
 	`)
 	var listEnvs bool
 	f.BoolVar(&listEnvs, "envs", false, "List the initialized environment variables.")
+	var listRemotes bool
+	f.BoolVar(&listRemotes, "list_remotes", false, "List the initialized remotes configurations.")
 	var listTargets bool
 	f.BoolVar(&listTargets, "list", false, "List the available targets.")
 	var listTargetsShort bool
 	f.BoolVar(&listTargetsShort, "l", false, "List the available targets.")
 	var listTargetsClean bool
 	f.BoolVar(&listTargetsClean, "list_clean", false, "List the available targets for bash completion.")
+	var remoteEnv string
+	f.StringVar(&remoteEnv, "remotes", "", "The remote target environment to run the target on.")
 	var verbose bool
 	f.BoolVar(&verbose, "verbose", false, "When used with list be verbose.")
 	var verboseShort bool
@@ -105,7 +135,7 @@ func (c *Command) Run(args []string) (int, error) {
 		os.Chdir(foundConfigDir)
 	}
 	// Create targets
-	targetConfig, err := target.NewConfigs(configs, c.W, c.WErr)
+	targetConfig, err := target.NewConfigs(configs, remoteEnv, c.W, c.WErr)
 	if err != nil {
 		return 1, err
 	}
@@ -119,6 +149,13 @@ func (c *Command) Run(args []string) (int, error) {
 	}
 	if listEnvs {
 		err := targetConfig.ListEnvs()
+		if err != nil {
+			return 1, err
+		}
+		return 0, nil
+	}
+	if listRemotes {
+		err := targetConfig.ListRemotes()
 		if err != nil {
 			return 1, err
 		}
