@@ -163,6 +163,7 @@ func addRonDirConfigs(wd string, configs *[]*RawConfig) {
 
 // addRonYamlFile will prepend the list of configs with
 // any ron.yaml files that are found along with returning its location.
+// oYamlPath is the path to the override yaml file.
 func addRonYamlFile(oYamlPath string, configs *[]*RawConfig) (string, error) {
 	var err error
 	foundConfigDir := ""
@@ -193,7 +194,7 @@ func addRonYamlFile(oYamlPath string, configs *[]*RawConfig) (string, error) {
 
 // addDefaultYamlFile will add a default config which should always be
 // last in priority. If no path option is given a built in default will
-// be created.
+// be created. dYamlPath is the path to the default yaml file.
 func addDefaultYamlFile(dYamlPath string, configs *[]*RawConfig) {
 	envs, targets, err := BuiltinDefault()
 	dConfig := &RawConfig{
