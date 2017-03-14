@@ -28,10 +28,10 @@ type SSHConfig struct {
 	Host         string `json:"host" yaml:"host"`
 	Port         int    `json:"port" yaml:"port"`
 	User         string `json:"user" yaml:"user"`
-	ProxyHost    string `json:"proxy_host" yaml:"proxy_host"`
-	ProxyPort    int    `json:"proxy_port" yaml:"proxy_port"`
-	ProxyUser    string `json:"proxy_user" yaml:"proxy_user"`
-	IdentityFile string `json:"identity_file" yaml:"identity_file"`
+	ProxyHost    string `json:"proxy_host,omitempty" yaml:"proxy_host,omitempty"`
+	ProxyPort    int    `json:"proxy_port,omitempty" yaml:"proxy_port,omitempty"`
+	ProxyUser    string `json:"proxy_user,omitempty" yaml:"proxy_user,omitempty"`
+	IdentityFile string `json:"identity_file,omitempty" yaml:"identity_file,omitempty"`
 }
 
 // RunCommand will execute a command using the input environment variables.

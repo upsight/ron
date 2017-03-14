@@ -13,6 +13,10 @@ remotes:
       host: exampleprod.com
       port: 22
       user: test
+      proxy_host:
+      proxy_port:
+      proxy_user:
+      identity_file:
 envs:
   - APP: ron.yaml
   - UNAME: plan9

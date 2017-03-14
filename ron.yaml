@@ -6,6 +6,10 @@ remotes:
       host: example2.com
       port: 22
       user: test
+      proxy_host:
+      proxy_port:
+      proxy_user:
+      identity_file:
 envs:
   - APP: ron
   - APP_UNDERSCORE: +echo $APP | tr "-" "_"
