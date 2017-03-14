@@ -4,9 +4,9 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"os"
-	"time"
 
 	"github.com/upsight/ron/color"
 
@@ -16,21 +16,93 @@ import (
 
 // SSH holds the ssh configuration and io.
 type SSH struct {
-	Config *ssh.ClientConfig
-	Host   string
-	Port   int
+	Config *SSHConfig
 	Stdin  io.Reader
 	Stdout io.Writer
 	Stderr io.Writer
 }
 
+// SSHConfig is an individual ssh configuration for creating
+// a connection.
+type SSHConfig struct {
+	Host         string `json:"host" yaml:"host"`
+	Port         int    `json:"port" yaml:"port"`
+	User         string `json:"user" yaml:"user"`
+	ProxyHost    string `json:"proxy_host" yaml:"proxy_host"`
+	ProxyPort    int    `json:"proxy_port" yaml:"proxy_port"`
+	ProxyUser    string `json:"proxy_user" yaml:"proxy_user"`
+	IdentityFile string `json:"identity_file" yaml:"identity_file"`
+}
+
 // RunCommand will execute a command using the input environment variables.
 // It will establish a new session on every call.
 func (s *SSH) RunCommand(cmd string, envs map[string]string) error {
-	conn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", s.Host, s.Port), s.Config)
-	if err != nil {
-		return fmt.Errorf("unable to connect: %s", err)
+	var (
+		conn       *ssh.Client
+		err        error
+		authMethod ssh.AuthMethod
+	)
+	switch {
+	case s.Config.IdentityFile != "":
+		pemBytes, err := ioutil.ReadFile(s.Config.IdentityFile)
+		if err != nil {
+			return err
+		}
+		signer, err := ssh.ParsePrivateKey(pemBytes)
+		if err != nil {
+			return err
+		}
+		authMethod = ssh.PublicKeys(signer)
+	default:
+		sshAgent, err := net.Dial("unix", os.Getenv("SSH_AUTH_SOCK"))
+		if err != nil {
+			return err
+		}
+		authMethod = ssh.PublicKeysCallback(agent.NewClient(sshAgent).Signers)
 	}
+	targetAddr := fmt.Sprintf("%s:%d", s.Config.Host, s.Config.Port)
+	targetConfig := &ssh.ClientConfig{
+		User: s.Config.User,
+		Auth: []ssh.AuthMethod{
+			authMethod,
+		},
+	}
+
+	switch {
+	case s.Config.ProxyHost != "":
+		bastionAddr := fmt.Sprintf("%s:%d", s.Config.ProxyHost, s.Config.ProxyPort)
+		bastionConfig := &ssh.ClientConfig{
+			User: s.Config.ProxyUser,
+			Auth: []ssh.AuthMethod{
+				authMethod,
+			},
+		}
+		// connect to the bastion host
+		bastionClient, err := ssh.Dial("tcp", bastionAddr, bastionConfig)
+		if err != nil {
+			return fmt.Errorf("unable to connect: %s", err)
+		}
+		defer bastionClient.Close()
+
+		// dial a connection to the service host, from the bastion
+		bconn, err := bastionClient.Dial("tcp", targetAddr)
+		if err != nil {
+			return fmt.Errorf("unable to connect: %s", err)
+		}
+		defer bconn.Close()
+
+		ncc, chans, reqs, err := ssh.NewClientConn(bconn, targetAddr, targetConfig)
+		if err != nil {
+			return fmt.Errorf("failed to create conn: %s", err)
+		}
+		conn = ssh.NewClient(ncc, chans, reqs)
+	default:
+		conn, err = ssh.Dial("tcp", targetAddr, targetConfig)
+		if err != nil {
+			return fmt.Errorf("unable to connect: %s", err)
+		}
+	}
+
 	defer conn.Close()
 
 	session, err := conn.NewSession()
@@ -85,7 +157,7 @@ func (s *SSH) prepareCommand(session *ssh.Session, cmd string, envs map[string]s
 		scanner := bufio.NewScanner(stdout)
 		go func() {
 			for scanner.Scan() {
-				fmt.Fprintf(s.Stdout, color.Green("%s]")+" %s\n", s.Host, scanner.Text())
+				fmt.Fprintf(s.Stdout, color.Green("%s]")+" %s\n", s.Config.Host, scanner.Text())
 			}
 			if err := scanner.Err(); err != nil {
 				fmt.Fprintln(s.Stderr, err)
@@ -101,7 +173,7 @@ func (s *SSH) prepareCommand(session *ssh.Session, cmd string, envs map[string]s
 		scanner := bufio.NewScanner(stderr)
 		go func() {
 			for scanner.Scan() {
-				fmt.Fprintf(s.Stderr, color.Red("%s]")+" %s\n", s.Host, scanner.Text())
+				fmt.Fprintf(s.Stderr, color.Red("%s]")+" %s\n", s.Config.Host, scanner.Text())
 			}
 			if err := scanner.Err(); err != nil {
 				fmt.Fprintln(s.Stderr, err)
@@ -114,24 +186,9 @@ func (s *SSH) prepareCommand(session *ssh.Session, cmd string, envs map[string]s
 // NewSSH will initialize a new ssh configuration for use with RunCommand.
 // This assumes an ssh agent is available and the proper keys have been added
 // with ssh-add. You can check added keys with ssh-add -L
-func NewSSH(user, host string, port int, stdin io.Reader, stdout, stderr io.Writer) (*SSH, error) {
-	sshAgent, err := net.Dial("unix", os.Getenv("SSH_AUTH_SOCK"))
-	if err != nil {
-		return nil, err
-	}
-
-	sshConfig := &ssh.ClientConfig{
-		User: user,
-		Auth: []ssh.AuthMethod{
-			ssh.PublicKeysCallback(agent.NewClient(sshAgent).Signers),
-		},
-		Timeout: time.Duration(5 * time.Second),
-	}
-
+func NewSSH(conf *SSHConfig, stdin io.Reader, stdout, stderr io.Writer) (*SSH, error) {
 	s := &SSH{
-		Config: sshConfig,
-		Host:   host,
-		Port:   port,
+		Config: conf,
 		Stdin:  stdin,
 		Stdout: stdout,
 		Stderr: stderr,

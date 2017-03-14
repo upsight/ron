@@ -9,13 +9,14 @@ import (
 	"strings"
 
 	"github.com/upsight/ron/color"
+	"github.com/upsight/ron/execute"
 	yaml "gopkg.in/yaml.v2"
 )
 
 // Configs is a mapping of filename to target file.
 type Configs struct {
-	RemoteEnv   string        // The remote hosts to run the command on. This is (file):env
-	RemoteHosts []*RemoteHost // a list of remote hosts to execute on.
+	RemoteEnv   string               // The remote hosts to run the command on. This is (file):env
+	RemoteHosts []*execute.SSHConfig // a list of remote hosts to execute on.
 	Files       []*File
 	StdOut      io.Writer
 	StdErr      io.Writer

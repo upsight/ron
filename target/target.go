@@ -84,8 +84,8 @@ func (t *Target) Run() (int, string, error) {
 
 // RunRemote executes the target on a remote host. It ignores any
 // before and after targets.
-func (t *Target) RunRemote(conf *RemoteHost) (int, string, error) {
-	s, err := execute.NewSSH(conf.User, conf.Host, conf.Port, os.Stdin, t.W, t.WErr)
+func (t *Target) RunRemote(conf *execute.SSHConfig) (int, string, error) {
+	s, err := execute.NewSSH(conf, os.Stdin, t.W, t.WErr)
 	if err != nil {
 		return 1, "", err
 	}

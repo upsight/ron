@@ -148,15 +148,16 @@ target name seperated by colon.
 	  -yaml string
 	    	Path to override yaml file, can be local or http.
 
-		ron contains a default set of remotes, envs and targets that can be inspected with the
+		ron contains a default set of envs and targets that can be inspected with the
 		flag options listed above. Those can also be overidden with another yaml file.
 		If no -default or -yaml is provided and in the current or parent working directory there
 		exists a ron.yaml, then those will be used as the -yaml option.
 
-		The yaml config should contain a list of "remotes" (optional), "envs", and a hash of "targets".
+		The yaml config should contain "remotes" (optional), "envs", and a hash of "targets".
 
 		remotes should be defined as a map with any environment name and a list of server values. It's only
 		necessary to define them once so they could be globally set for example in ~/.ron/remotes.yaml
+		You can then reference it with -remote=remotes:some_other_env
 
 			remotes:
 				staging:
@@ -173,8 +174,13 @@ target name seperated by colon.
 						host: exampleprod.com
 						port: 22
 						user: test
+						proxy_host: bastionserver.com
+						proxy_port: 22
+						proxy_user: bastion_user
+						identity_file: /optional/path/to/identityfile
 
-		The yaml config should contain a list of "remotes", "envs" and a hash of "targets".
+		If no identity file is provided, the users local ssh agent will be attempted. You can add
+		keys with ssh-add.
 
 		env values prefixed with a +(subject to change) will be executed and set to the os environment
 		prior to target execution.

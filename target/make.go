@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/upsight/ron/color"
+	"github.com/upsight/ron/execute"
 )
 
 // MSS is an alias for map[string]string
@@ -36,7 +37,7 @@ func (m *Make) Run(names ...string) error {
 			wg := &sync.WaitGroup{}
 			for _, h := range m.Configs.RemoteHosts {
 				wg.Add(1)
-				go func(host *RemoteHost) {
+				go func(host *execute.SSHConfig) {
 					defer wg.Done()
 					status, out, err := target.RunRemote(host)
 					if status != 0 || err != nil {
