@@ -125,7 +125,7 @@ func (c *Command) Run(args []string) (int, error) {
 	// go run cmd/ron/main.go t -default=target/default.yaml -l "b*"
 	// [/var/folders/rs/0jn_2dpn36x53x8tvgvptr740000gn/T/go-build906759632/command-line-arguments/_obj/exe/main t -default=target/default.yaml -l b*]
 
-	configs, foundConfigDir, err := target.LoadConfigFiles(defaultYamlPath, overrideYamlPath)
+	configs, foundConfigDir, err := target.LoadConfigFiles(defaultYamlPath, overrideYamlPath, true)
 	if err != nil {
 		return 1, err
 	}

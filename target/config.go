@@ -110,14 +110,16 @@ func findConfigFile() (string, error) {
 
 // findConfigDirs will search in the current directory for a .ron folder
 // with *.yaml files, and then search parent directories.
-func findConfigDirs(curdir string) (dirs []string) {
-	defer func() {
-		// append the users home directory before returning
-		hd := filepath.Join(homeDir(), ConfigDirName)
-		if _, err := os.Stat(hd); err == nil {
-			dirs = append(dirs, hd)
-		}
-	}()
+func findConfigDirs(curdir string, withHomeDirectory bool) (dirs []string) {
+	if withHomeDirectory {
+		defer func() {
+			// append the users home directory before returning
+			hd := filepath.Join(homeDir(), ConfigDirName)
+			if _, err := os.Stat(hd); err == nil {
+				dirs = append(dirs, hd)
+			}
+		}()
+	}
 
 	for {
 		dirpath := filepath.Join(curdir, ConfigDirName)
@@ -148,8 +150,8 @@ func findConfigDirFiles(dirs []string) []string {
 // addRonDirConfigs will first find any .ron folders in the current
 // directory, followed by appending the home directory .ron folder.
 // Any errors here will abort adding conigs and just return.
-func addRonDirConfigs(wd string, configs *[]*RawConfig) {
-	dirs := findConfigDirs(wd)
+func addRonDirConfigs(wd string, configs *[]*RawConfig, withHomeDirectory bool) {
+	dirs := findConfigDirs(wd, withHomeDirectory)
 	files := findConfigDirFiles(dirs)
 	for _, file := range files {
 		conf, err := LoadConfigFile(file)
@@ -223,14 +225,14 @@ func addDefaultYamlFile(dYamlPath string, configs *[]*RawConfig) {
 // that file instead. In that case, the path to that file will be returned
 // so that the caller can change the working directory to that folder before
 // running further commands.
-func LoadConfigFiles(defaultYamlPath, overrideYamlPath string) ([]*RawConfig, string, error) {
+func LoadConfigFiles(defaultYamlPath, overrideYamlPath string, withHomeDirectory bool) ([]*RawConfig, string, error) {
 	configs := []*RawConfig{}
 
 	foundConfigDir, err := addRonYamlFile(overrideYamlPath, &configs)
 
 	wd, err := os.Getwd()
 	if err == nil {
-		addRonDirConfigs(wd, &configs)
+		addRonDirConfigs(wd, &configs, withHomeDirectory)
 	}
 	addDefaultYamlFile(defaultYamlPath, &configs)
 	return configs, foundConfigDir, nil

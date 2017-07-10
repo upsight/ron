@@ -33,7 +33,7 @@ func Test_findConfigDirs(t *testing.T) {
 	ok(t, err)
 	want := filepath.Join(wd, "testdata", ConfigDirName)
 
-	dirs := findConfigDirs(filepath.Join(wd, "testdata"))
+	dirs := findConfigDirs(filepath.Join(wd, "testdata"), false)
 
 	found := false
 	for _, dir := range dirs {
@@ -120,7 +120,7 @@ func TestLoadConfigFiles(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			configs, found, err := LoadConfigFiles(tt.defaultYamlPath, tt.overrideYamlPath)
+			configs, found, err := LoadConfigFiles(tt.defaultYamlPath, tt.overrideYamlPath, false)
 			ok(t, err)
 			for i, config := range configs {
 				equals(t, strings.TrimSpace(tt.expectedConfigs[i].Envs), strings.TrimSpace(config.Envs))
