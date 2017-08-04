@@ -146,7 +146,7 @@ func TestEnv_ProcessBadCommand(t *testing.T) {
 	writer := &bytes.Buffer{}
 	//envs, _, err := BuiltinDefault()
 	//ok(t, err)
-	e, err := NewEnv(nil, &RawConfig{Envs: testNewEnvConfig + "\nHELLO=+hello"}, ParseOSEnvs([]string{}), writer)
+	e, err := NewEnv(nil, &RawConfig{Envs: testNewEnvConfig + "- HELLO: +hello"}, ParseOSEnvs([]string{}), writer)
 	ok(t, err)
 	err = e.process()
 	if err == nil {
@@ -155,18 +155,7 @@ func TestEnv_ProcessBadCommand(t *testing.T) {
 }
 
 func TestEnv_ProcessBadYaml(t *testing.T) {
-	e, err := NewEnv(nil, &RawConfig{Envs: `:"`}, MSS{}, nil)
-	ok(t, err)
-	err = e.process()
-	if err == nil {
-		t.Fatal("should have gotten invalid err")
-	}
-}
-
-func TestEnv_ProcessBadYamlNewEnvs(t *testing.T) {
-	e, err := NewEnv(nil, &RawConfig{Envs: `:"`}, MSS{}, nil)
-	ok(t, err)
-	err = e.process()
+	_, err := NewEnv(nil, &RawConfig{Envs: `:"`}, MSS{}, nil)
 	if err == nil {
 		t.Fatal("should have gotten invalid err")
 	}
@@ -213,4 +202,25 @@ func TestEnv_PrintRawBadWriter(t *testing.T) {
 	e, err := NewEnv(nil, &RawConfig{Envs: envs}, MSS{}, badWriter{})
 	ok(t, err)
 	e.PrintRaw()
+}
+
+func TestEnv_Merge(t *testing.T) {
+	writer := &bytes.Buffer{}
+	e1Config := `
+- APP: ron
+- HELLO: hello
+- ABC: +pwd
+`
+	e2Config := `
+- GOOD: bye
+- BLAH: +pwd
+`
+	e1, _ := NewEnv(nil, &RawConfig{Envs: e1Config}, ParseOSEnvs([]string{}), writer)
+	e2, _ := NewEnv(nil, &RawConfig{Envs: e2Config}, ParseOSEnvs([]string{}), writer)
+	e1.Merge(e2)
+	equals(t, e2.config["APP"], "ron")
+	equals(t, e2.config["GOOD"], "bye")
+	equals(t, e2.config["BLAH"], "+pwd")
+	equals(t, e2.config["ABC"], "+pwd")
+	equals(t, e2.config["HELLO"], "hello")
 }

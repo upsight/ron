@@ -23,12 +23,13 @@ const (
 // Env takes a raw yaml environment definition and expands and
 // overrides any variables.
 type Env struct {
-	OSEnvs    MSS       // the initial environment variables
-	W         io.Writer // underlying writer
-	config    MSS       // the key value of expanded variables
-	keyOrder  []string  // the env keys order of preference
-	rawConfig *RawConfig
-	parent    *File
+	OSEnvs      MSS       // the initial environment variables
+	W           io.Writer // underlying writer
+	config      MSS       // the key value of expanded variables
+	keyOrder    []string  // the env keys order of preference
+	rawConfig   *RawConfig
+	parent      *File
+	isProcessed bool
 }
 
 // ParseOSEnvs takes a list of "key=val" and splits them
@@ -58,37 +59,40 @@ func NewEnv(parentFile *File, config *RawConfig, osEnvs MSS, writer io.Writer) (
 		rawConfig: config,
 		parent:    parentFile,
 	}
+	err := e.initEnvKeyOrder()
+	if err != nil {
+		return nil, err
+	}
 	return e, nil
 }
 
 // Config returns the envs config as a map[string]string. It will process
 // each env if that has not been done already.
 func (e *Env) Config() (MSS, error) {
-	if len(e.config) == 0 {
+	if !e.isProcessed {
 		err := e.process()
 		if err != nil {
 			return nil, err
 		}
-
 	}
 	return e.config, nil
 }
 
-// process takes the raw env configuration yaml and converts
-// it to expanded variable definitions based on passed in
-// environment variables and yaml config.
-// The overriding value used is from os.Environ.
-func (e *Env) process() error {
-	if len(e.config) > 0 {
-		// already processed
-		return nil
-	}
-	if e.parent != nil {
-		err := e.parent.Env.process()
-		if err != nil {
-			return err
+// Merge the current env into any missing keys for the input node.
+func (e *Env) Merge(node *Env) error {
+	for k, v := range e.config {
+		if _, ok := node.config[k]; !ok {
+			node.config[k] = v
+			if !keyIn(k, node.keyOrder) {
+				node.keyOrder = append(node.keyOrder, k)
+			}
 		}
 	}
+	return nil
+}
+
+// initEnvKeyOrder initialize the internal config mapping and key order.
+func (e *Env) initEnvKeyOrder() error {
 	var envs []MSS
 	if err := yaml.Unmarshal([]byte(e.rawConfig.Envs), &envs); err != nil {
 		return err
@@ -107,9 +111,28 @@ func (e *Env) process() error {
 			}
 		}
 	}
+	return nil
+}
+
+// process takes the raw env configuration yaml and converts
+// it to expanded variable definitions based on passed in
+// environment variables and yaml config.
+// The overriding value used is from os.Environ.
+func (e *Env) process() error {
+	if e.isProcessed {
+		// already processed
+		return nil
+	}
+	if e.parent != nil {
+		err := e.parent.Env.process()
+		if err != nil {
+			return err
+		}
+	}
 	for k, v := range e.OSEnvs {
 		e.config[k] = v
 	}
+	e.isProcessed = true
 
 	// env variable values that start with ExecSentinel will be
 	// executed to get the output value and set.
@@ -135,12 +158,6 @@ func (e *Env) process() error {
 
 // getExec executes the command defined by the ExecSentinel string.
 func (e *Env) getExec(key string) (out string, err error) {
-	if len(e.config) == 0 {
-		err := e.process()
-		if err != nil {
-			return "", err
-		}
-	}
 	stdOut := bytes.Buffer{}
 	stdErr := bytes.Buffer{}
 	status, err := execute.Command(e.config[key][1:], &stdOut, &stdErr, e.config)
@@ -158,7 +175,7 @@ func (e *Env) getExec(key string) (out string, err error) {
 // Getenv retrieves the value of the environment variable named by the key.
 // It returns the value, which will be empty if the variable is not present.
 func (e *Env) Getenv(key string) string {
-	if len(e.config) == 0 {
+	if !e.isProcessed {
 		err := e.process()
 		if err != nil {
 			return ""
@@ -178,7 +195,7 @@ func (e *Env) Getenv(key string) string {
 // the configured env based on overriden environment
 // variables and default yaml ones.
 func (e *Env) List() error {
-	if len(e.config) == 0 {
+	if !e.isProcessed {
 		err := e.process()
 		if err != nil {
 			return err
