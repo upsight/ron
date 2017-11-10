@@ -28,7 +28,7 @@ or download from [releases](https://github.com/pkar/ron/releases)
 
 ### Upgrade
 
-	LATEST_URL=https://github.com/upsight/ron/releases/download/v1.0.1/ron-linux-v1.0.1 ron upgrade
+	LATEST_URL=https://github.com/upsight/ron/releases/download/v1.1.0/ron-linux-v1.1.0 ron upgrade
 
 ### Testing
 
