@@ -6,5 +6,5 @@ var (
 	// AppVersion the application version.
 	AppVersion = "0.0.1"
 	// GitCommit is the git hash for the current commit.
-	GitCommit = "53a7de4612c36b4cf36a9059b5dfa66fbc2639f9"
+	GitCommit = ""
 )

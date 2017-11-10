@@ -1,4 +1,4 @@
-package ron
+package template
 
 import (
 	"bytes"

@@ -4,7 +4,7 @@ envs:
   - APP: go
   - ARCH: amd64
   - UNAME: +uname | tr '[:upper:]' '[:lower:]'
-  - GO_VERSION: 1.8
+  - GO_VERSION: 1.9.2
   - TAG: v0.0.1
   - RELEASES: linux darwin windows
   - PACKAGE_VERSION: +git describe --always --dirty --tags | tr '-' '_'
