@@ -24,7 +24,7 @@ http://godoc.org/github.com/upsight/ron
 
 	$ go get -u github.com/upsight/ron/cmd/...
 
-or download from [releases](https://github.com/pkar/ron/releases)
+or download from [releases](https://github.com/upsight/ron/releases)
 
 ### Upgrade
 
@@ -33,4 +33,3 @@ or download from [releases](https://github.com/pkar/ron/releases)
 ### Testing
 
 	$ ron t go:test
-
