@@ -36,12 +36,13 @@ targets:
       - prep
       - build
     cmd: |
-      go install $REPO/cmd/$APP
+      cp bin/${UNAME}_${ARCH}/$APP-${UNAME}-$TAG $GOPATH/bin/ron
   build:
     description: Compile a binary to ./bin/${UNAME}_${ARCH}
     before:
       - prep
     cmd: |
+      set -x
       mkdir -p bin/${UNAME}_${ARCH}
       GOARCH=$ARCH GOOS=$UNAME go build -o bin/${UNAME}_${ARCH}/$APP-${UNAME}-$TAG -ldflags "-X $REPO.GitCommit=$PACKAGE_VERSION -X $REPO.AppVersion=$TAG -X $REPO.AppName=$APP" cmd/$APP/*.go
   build_all:
