@@ -84,7 +84,7 @@ func TestEnv_processParentFile(t *testing.T) {
 	eParent, err := NewEnv(nil, &RawConfig{Envs: ""}, ParseOSEnvs([]string{"APP=don", "HELLO=goodbye", "ABC=+pwd"}), writer)
 	ok(t, err)
 	f := &File{Env: eParent}
-	e, err := NewEnv(f, &RawConfig{Envs: ""}, ParseOSEnvs([]string{"APP=ron", "HELLO=hello", "ABC=+pwd"}), writer)
+	e, err := NewEnv(f, &RawConfig{Envs: ""}, ParseOSEnvs([]string{"APP=", "HELLO=hello", "ABC=+pwd"}), writer)
 	ok(t, err)
 	err = e.process()
 	ok(t, err)
@@ -95,7 +95,7 @@ func TestEnv_processParentFile(t *testing.T) {
 	want := `don`
 	equals(t, want, got)
 	got = c["HELLO"]
-	want = `goodbye`
+	want = `hello`
 	equals(t, want, got)
 }
 

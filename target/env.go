@@ -148,9 +148,12 @@ func (e *Env) process() error {
 		e.config[k] = os.Expand(e.config[k], e.Getenv)
 	}
 	if e.parent != nil {
-		// set the parent envs here as final values.
+		// set the final envs from parent here as final
+		// only if the value is empty.
 		for k, v := range e.parent.Env.config {
-			e.config[k] = v
+			if e.config[k] == "" {
+				e.config[k] = v
+			}
 		}
 	}
 	return nil
