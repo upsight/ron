@@ -66,6 +66,7 @@ func (s *SSH) RunCommand(cmd string, envs map[string]string) error {
 		Auth: []ssh.AuthMethod{
 			authMethod,
 		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
 	switch {
@@ -76,6 +77,7 @@ func (s *SSH) RunCommand(cmd string, envs map[string]string) error {
 			Auth: []ssh.AuthMethod{
 				authMethod,
 			},
+			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 		}
 		// connect to the bastion host
 		bastionClient, err := ssh.Dial("tcp", bastionAddr, bastionConfig)
