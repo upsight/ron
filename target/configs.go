@@ -74,17 +74,12 @@ func NewConfigs(configs []*RawConfig, remoteEnv string, stdOut io.Writer, stdErr
 			return nil, err
 		}
 		f.Env = e
+		if parentFile != nil {
+			parentFile.Env.MergeTo(f.Env)
+		}
 		confs.Files = append(confs.Files, f)
 		if strings.HasSuffix(config.Filepath, ConfigFileName) {
 			parentFile = f
-		}
-	}
-	for i := len(confs.Files) - 1; i >= 0; i-- {
-		curFile := confs.Files[i]
-		parent := confs.Files[i].Env.parent
-		for parent != nil {
-			curFile.Env.Merge(parent.Env)
-			parent = parent.Env.parent
 		}
 	}
 

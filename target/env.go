@@ -78,8 +78,8 @@ func (e *Env) Config() (MSS, error) {
 	return e.config, nil
 }
 
-// Merge the current env into any missing keys for the input node.
-func (e *Env) Merge(node *Env) error {
+// MergeTo the current env into any missing keys for the input node.
+func (e *Env) MergeTo(node *Env) error {
 	for k, v := range e.config {
 		if _, ok := node.config[k]; !ok {
 			node.config[k] = v
