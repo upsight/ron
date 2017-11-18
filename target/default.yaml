@@ -4,7 +4,7 @@ envs:
   - CURDIR: +pwd
   - UNAME: +uname | tr '[:upper:]' '[:lower:]'
   - PACKAGE_VERSION: +git describe --always --dirty --tags | tr '-' '_'
-  - TAG: v1.1.2
+  - TAG: v1.1.3
   - LATEST_URL: "https://github.com/upsight/ron/releases/download/$TAG/ron-${UNAME}-$TAG"
 targets:
   _hello:
