@@ -237,7 +237,7 @@ Upgrade
 Ron can be upgraded if you already have it installed. The easiest way
 is to just provide a LATEST_URL to the upgrade command:
 
-	$ LATEST_URL=https://github.com/upsight/ron/releases/download/v1.1.2/ron-linux-v1.1.2 ron upgrade
+	$ LATEST_URL=https://github.com/upsight/ron/releases/download/v1.1.3/ron-linux-v1.1.3 ron upgrade
 
 Version
 

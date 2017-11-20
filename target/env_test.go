@@ -204,23 +204,24 @@ func TestEnv_PrintRawBadWriter(t *testing.T) {
 	e.PrintRaw()
 }
 
-func TestEnv_Merge(t *testing.T) {
+func TestEnv_MergeTo(t *testing.T) {
 	writer := &bytes.Buffer{}
 	e1Config := `
+- ABC: +pwd
 - APP: ron
 - HELLO: hello
-- ABC: +pwd
 `
 	e2Config := `
-- GOOD: bye
 - BLAH: +pwd
+- GOOD: bye
+- HELLO: bye
 `
 	e1, _ := NewEnv(nil, &RawConfig{Envs: e1Config}, ParseOSEnvs([]string{}), writer)
 	e2, _ := NewEnv(nil, &RawConfig{Envs: e2Config}, ParseOSEnvs([]string{}), writer)
-	e1.Merge(e2)
-	equals(t, e2.config["APP"], "ron")
-	equals(t, e2.config["GOOD"], "bye")
-	equals(t, e2.config["BLAH"], "+pwd")
+	e1.MergeTo(e2)
 	equals(t, e2.config["ABC"], "+pwd")
-	equals(t, e2.config["HELLO"], "hello")
+	equals(t, e2.config["APP"], "ron")
+	equals(t, e2.config["BLAH"], "+pwd")
+	equals(t, e2.config["GOOD"], "bye")
+	equals(t, e2.config["HELLO"], "bye")
 }
