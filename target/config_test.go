@@ -176,6 +176,7 @@ func TestLoadConfigEmpty(t *testing.T) {
 }
 
 func TestExtractConfigError(t *testing.T) {
+
 	config := `
 envs:
   - APP: ron
@@ -192,7 +193,8 @@ c:
 d:
 e:
 f:`
-	want := fmt.Errorf(`file.yaml yaml: line 9: could not find expected ':'
+
+	want := fmt.Errorf(`file.yaml yaml: line 10: could not find expected ':'
   - APP: ron
   - APP: ron
   - APP: ron
@@ -208,5 +210,12 @@ c: `)
 		t.Error("yaml should be invalid")
 	}
 	got := extractConfigError("file.yaml", config, err)
+
+	fmt.Println("want-----------------------------------------")
+	fmt.Println(want)
+	fmt.Println("-----------------------------------------")
+	fmt.Println("got-----------------------------------------")
+	fmt.Println(got)
+	fmt.Println("-----------------------------------------")
 	equals(t, want, got)
 }

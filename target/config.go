@@ -74,9 +74,9 @@ func extractConfigError(path, input string, inErr error) error {
 			between := [2]int{lineNum - 5, lineNum + 5}
 			for i, line := range inLines {
 				switch {
-				case i+1 == lineNum:
+				case i+2 == lineNum:
 					text = append(text, line+" <<<<<<<<<<")
-				case i+1 > between[0] && i+1 < between[1]:
+				case i+2 > between[0] && i+2 < between[1]:
 					text = append(text, line)
 				}
 			}
