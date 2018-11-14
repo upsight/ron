@@ -23,6 +23,27 @@ const (
 	ConfigFileName = "ron.yaml"
 )
 
+var (
+	// DefaultYamlBytes is used for the default built in binary targets
+	// exported into default.go. If using as a library you can override this
+	// by setting target.DefaultYamlBytes globally during startup.
+	//   defaultYaml, err := config.Asset("myconfig/default.yaml")
+	//   if err != nil {
+	//       return err
+	//   }
+	//   target.DefaultYamlBytes = defaultYaml
+	DefaultYamlBytes = []byte{}
+)
+
+func init() {
+	defaultYaml, err := Asset("target/default.yaml")
+	if err != nil {
+		fmt.Println(color.Red(err.Error()))
+	} else {
+		DefaultYamlBytes = defaultYaml
+	}
+}
+
 // ConfigFile is used to unmarshal configuration files.
 type ConfigFile struct {
 	Envs    []map[string]string `json:"envs" yaml:"envs"`
@@ -284,11 +305,7 @@ var LoadConfigFile = func(path string) (*RawConfig, error) {
 
 // BuiltinDefault loads the binary yaml file and returns envs, targets, and any errors.
 func BuiltinDefault() (string, string, error) {
-	defaultYaml, err := Asset("target/default.yaml")
-	if err != nil {
-		return "", "", err
-	}
-	content, err := template.RenderGo("builtin:target/default.yaml", string(defaultYaml))
+	content, err := template.RenderGo("builtin:target/default.yaml", string(DefaultYamlBytes))
 	if err != nil {
 		return "", "", err
 	}
